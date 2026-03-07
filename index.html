@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GI Scribe">
+<meta name="theme-color" content="#0a0e14">
+<title>GI Scribe</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+  :root {
+    --bg:#0a0e14;--surface:#111820;--surface2:#1a2332;--border:#1e2d3d;
+    --accent:#00d4aa;--accent2:#0096ff;--danger:#ff4757;--warn:#ffa502;
+    --text:#e8f0fe;--text-dim:#6b8099;--text-muted:#3d5166;
+    --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;padding-top:var(--safe-top);padding-bottom:var(--safe-bottom)}
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 40% at 15% 10%,rgba(0,212,170,.05) 0%,transparent 60%),radial-gradient(ellipse 50% 50% at 85% 80%,rgba(0,150,255,.05) 0%,transparent 60%);pointer-events:none;z-index:0}
+
+  header{position:relative;z-index:10;padding:14px 20px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(10,14,20,.95);flex-shrink:0}
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px}
+  .logo-name{font-size:17px;font-weight:600;letter-spacing:-.3px}
+  .logo-sub{font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.8px;text-transform:uppercase}
+  .status-badge{display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;border:1px solid var(--border);background:var(--surface);transition:all .3s}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--text-muted);transition:all .3s}
+  .status-badge.listening{border-color:rgba(255,71,87,.4);color:#ff6b78}
+  .status-badge.listening .status-dot{background:var(--danger);box-shadow:0 0 8px var(--danger);animation:blink 1.2s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+  .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;position:relative;z-index:5}
+  .tab{flex:1;padding:12px 8px;text-align:center;font-size:12px;font-family:'DM Mono',monospace;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;user-select:none}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+  .panels{flex:1;overflow:hidden;position:relative}
+  .panel{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .2s}
+  .panel.active{opacity:1;pointer-events:all}
+
+  .safari-note{margin:12px 20px;padding:10px 14px;background:rgba(255,165,2,.08);border:1px solid rgba(255,165,2,.25);border-radius:8px;font-size:12px;color:var(--warn);line-height:1.6;display:none;flex-shrink:0}
+
+  .mic-area{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 24px 18px;gap:14px;border-bottom:1px solid var(--border);flex-shrink:0}
+  .timer{font-family:'DM Mono',monospace;font-size:22px;color:var(--accent);letter-spacing:2px;min-height:28px}
+  .mic-btn{width:88px;height:88px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;font-size:34px;cursor:pointer;transition:all .25s;position:relative;background:linear-gradient(145deg,#1a2d22,#0d1a11);box-shadow:0 0 0 2px rgba(0,212,170,.3),0 8px 28px rgba(0,0,0,.5)}
+  .mic-btn:active{transform:scale(.92)}
+  .mic-btn.recording{background:linear-gradient(145deg,#2d1a1a,#1a0d0d);box-shadow:0 0 0 2px rgba(255,71,87,.5),0 0 36px rgba(255,71,87,.2),0 8px 28px rgba(0,0,0,.5);animation:recPulse 2s ease-in-out infinite}
+  @keyframes recPulse{0%,100%{box-shadow:0 0 0 2px rgba(255,71,87,.5),0 0 26px rgba(255,71,87,.15),0 8px 28px rgba(0,0,0,.5)}50%{box-shadow:0 0 0 6px rgba(255,71,87,.2),0 0 46px rgba(255,71,87,.25),0 8px 28px rgba(0,0,0,.5)}}
+  .ripple{position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(255,71,87,.3);display:none;animation:ripple 1.5s ease-out infinite}
+  .mic-btn.recording .ripple{display:block}
+  .ripple:nth-child(2){animation-delay:.5s;inset:-18px}
+  @keyframes ripple{0%{transform:scale(.9);opacity:.8}100%{transform:scale(1.3);opacity:0}}
+  .mic-label{font-size:13px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.4px}
+
+  .controls-row{display:flex;gap:10px;justify-content:center}
+  .btn{display:flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;font-family:'DM Sans',sans-serif;transition:all .2s;-webkit-user-select:none;min-height:44px}
+  .btn:active{opacity:.7;transform:scale(.97)}
+  .btn:disabled{opacity:.35;pointer-events:none}
+  .btn-danger{background:transparent;color:var(--danger);border-color:rgba(255,71,87,.35)}
+  .btn-secondary{background:var(--surface2);color:var(--text-dim);border-color:var(--border)}
+
+  .transcript-scroll{flex:1;overflow-y:auto;padding:16px 20px;-webkit-overflow-scrolling:touch}
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:var(--text-muted);text-align:center}
+  .empty-state .icon{font-size:40px;opacity:.35}
+  .empty-state p{font-size:13px;line-height:1.7;max-width:230px;color:var(--text-dim)}
+  .transcript-text{font-size:14px;line-height:1.9;color:#b0c4d8;font-family:'DM Mono',monospace;white-space:pre-wrap}
+  .interim{color:var(--text-muted);font-style:italic}
+
+  .report-actions{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;gap:10px;flex-shrink:0;background:var(--surface)}
+  .btn-generate{flex:1;justify-content:center;background:linear-gradient(135deg,#006644,#004d33);color:#00ffb3;border:1px solid rgba(0,212,170,.3);font-weight:600;font-size:14px;min-height:48px}
+  .btn-generate:active:not(:disabled){opacity:.8}
+  .btn-copy{background:var(--surface2);color:var(--text-dim);border-color:var(--border);padding:10px 16px;min-height:48px}
+  .spinner{width:15px;height:15px;border:2px solid rgba(0,255,179,.3);border-top-color:#00ffb3;border-radius:50%;animation:spin .8s linear infinite;display:none}
+  .spinner.active{display:block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .report-scroll{flex:1;overflow-y:auto;padding:16px 20px;-webkit-overflow-scrolling:touch}
+  .shimmer{background:linear-gradient(90deg,var(--surface2) 25%,#243040 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:4px;height:15px;margin-bottom:8px}
+  @keyframes shimmer{to{background-position:-200% 0}}
+  .processing{display:none}
+  .processing.active{display:block}
+  .proc-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);margin-bottom:10px;letter-spacing:1px}
+
+  .report-section{margin-bottom:22px;animation:fadeIn .35s ease both}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .report-section-title{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(0,212,170,.15)}
+  .report-field{margin-bottom:10px}
+  .report-field-label{font-size:11px;color:var(--text-dim);margin-bottom:3px;font-weight:500}
+  .report-field-value{font-size:12px;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 13px;line-height:1.6;font-family:'DM Mono',monospace;min-height:38px;transition:border-color .4s,box-shadow .4s}
+  .report-field-value.flash{border-color:rgba(0,212,170,.6);box-shadow:0 0 0 2px rgba(0,212,170,.1)}
+  .report-field-value:empty::after{content:'—';color:var(--text-muted)}
+  .tag{display:inline-block;padding:3px 9px;border-radius:5px;font-size:11px;font-family:'DM Mono',monospace;margin:2px 3px 2px 0}
+  .tag-finding{background:rgba(0,150,255,.12);color:var(--accent2);border:1px solid rgba(0,150,255,.25)}
+
+  footer{position:relative;z-index:5;padding:8px 20px;border-top:1px solid var(--border);background:rgba(10,14,20,.95);text-align:center;flex-shrink:0}
+  .footer-note{font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace}
+  .footer-note span{color:var(--warn)}
+
+  .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-size:13px;opacity:0;transition:all .3s;z-index:200;white-space:nowrap;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.error{border-color:rgba(255,71,87,.5);color:var(--danger)}
+  .toast.success{border-color:rgba(0,212,170,.5);color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔬</div>
+    <div>
+      <div class="logo-name">GI Scribe</div>
+      <div class="logo-sub">Procedure Listener</div>
+    </div>
+  </div>
+  <div class="status-badge" id="statusBadge">
+    <div class="status-dot"></div>
+    <span id="statusText">Idle</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tabRecord" onclick="switchTab('record')">🎙 Record</div>
+  <div class="tab" id="tabReport" onclick="switchTab('report')">📄 Report</div>
+</div>
+
+<div class="panels">
+
+  <!-- RECORD PANEL -->
+  <div class="panel active" id="panelRecord">
+    <div class="safari-note" id="safariNote">
+      📱 Connect your AirPods before tapping Record. Safari will ask for mic permission — tap <strong>Allow</strong>.
+    </div>
+
+    <div class="mic-area">
+      <div class="timer" id="timer"></div>
+      <button class="mic-btn" id="micBtn" onclick="toggleRecording()">
+        <div class="ripple"></div>
+        <div class="ripple"></div>
+        <span id="micIcon">🎙</span>
+      </button>
+      <div class="mic-label" id="micLabel">Tap to start recording</div>
+      <div class="controls-row">
+        <button class="btn btn-danger" id="btnStop" onclick="stopListening()" disabled>⏹ Stop</button>
+        <button class="btn btn-secondary" onclick="clearAll()">✕ Clear</button>
+      </div>
+    </div>
+
+    <div class="transcript-scroll" id="transcriptScroll">
+      <div class="empty-state" id="transcriptEmpty">
+        <div class="icon">🎤</div>
+        <p>Tap the mic and speak naturally during the procedure. Your transcript will appear here in real time.</p>
+      </div>
+      <div class="transcript-text" id="transcriptText" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- REPORT PANEL -->
+  <div class="panel" id="panelReport">
+    <div class="report-actions">
+      <button class="btn btn-generate" id="btnGenerate" onclick="generateReport()" disabled>
+        <div class="spinner" id="genSpinner"></div>
+        <span id="genBtnText">✦ Generate Report</span>
+      </button>
+      <button class="btn btn-copy" onclick="copyReport()">📋</button>
+    </div>
+
+    <div class="report-scroll">
+      <div class="empty-state" id="reportEmpty">
+        <div class="icon">📋</div>
+        <p>Record a procedure, then tap <strong>Generate Report</strong> to extract structured clinical data with AI.</p>
+      </div>
+
+      <div class="processing" id="processingIndicator">
+        <div class="proc-label">EXTRACTING CLINICAL DATA...</div>
+        <div class="shimmer" style="width:80%"></div>
+        <div class="shimmer" style="width:55%"></div>
+        <div class="shimmer" style="width:90%"></div>
+        <div class="shimmer" style="width:65%"></div>
+        <div class="shimmer" style="width:75%"></div>
+        <div class="shimmer" style="width:50%"></div>
+      </div>
+
+      <div id="reportContent" style="display:none"></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-note"><span>Review all AI-generated content before clinical use.</span> — GI Scribe</div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let recognition=null,isListening=false,finalTranscript='',interimTranscript='';
+let timerInterval=null,seconds=0;
+
+function switchTab(tab){
+  ['record','report'].forEach(t=>{
+    document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active',t===tab);
+    document.getElementById('panel'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active',t===tab);
+  });
+}
+
+function initRecognition(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showToast('Use Safari on iOS 15+ for speech recognition','error');return null;}
+  const r=new SR();
+  r.continuous=true;r.interimResults=true;r.lang='en-US';r.maxAlternatives=1;
+  r.onstart=()=>{isListening=true;updateUI(true)};
+  r.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;
+      if(e.results[i].isFinal){finalTranscript+=t+' ';}else{interim+=t;}
+    }
+    interimTranscript=interim;
+    renderTranscript();
+    document.getElementById('btnGenerate').disabled=false;
+  };
+  r.onerror=(e)=>{
+    if(e.error==='not-allowed'){showToast('Mic denied — check Safari Settings > Microphone','error');stopListening();}
+    else if(e.error==='audio-capture'){showToast('No mic found. Connect AirPods first.','error');stopListening();}
+    else if(e.error!=='no-speech'&&e.error!=='aborted'){showToast('Error: '+e.error,'error');}
+  };
+  // Safari stops after silence — auto-restart
+  r.onend=()=>{
+    if(isListening){setTimeout(()=>{try{r.start();}catch(ex){}},250);}
+  };
+  return r;
+}
+
+function toggleRecording(){isListening?stopListening():startListening();}
+
+function startListening(){
+  if(!recognition)recognition=initRecognition();
+  if(!recognition)return;
+  try{recognition.start();startTimer();document.getElementById('btnStop').disabled=false;}
+  catch(e){console.log('start err:',e);}
+}
+
+function stopListening(){
+  isListening=false;
+  if(recognition){try{recognition.stop();}catch(e){}}
+  stopTimer();
+  document.getElementById('btnStop').disabled=true;
+  updateUI(false);
+  interimTranscript='';
+  renderTranscript();
+}
+
+function clearAll(){
+  stopListening();
+  finalTranscript='';interimTranscript='';seconds=0;
+  document.getElementById('timer').textContent='';
+  document.getElementById('transcriptText').style.display='none';
+  document.getElementById('transcriptEmpty').style.display='flex';
+  document.getElementById('reportContent').style.display='none';
+  document.getElementById('reportEmpty').style.display='flex';
+  document.getElementById('processingIndicator').classList.remove('active');
+  document.getElementById('btnGenerate').disabled=true;
+}
+
+function updateUI(rec){
+  const badge=document.getElementById('statusBadge');
+  badge.classList.toggle('listening',rec);
+  document.getElementById('statusText').textContent=rec?'Recording':'Idle';
+  const micBtn=document.getElementById('micBtn');
+  micBtn.classList.toggle('recording',rec);
+  document.getElementById('micIcon').textContent=rec?'⏹':'🎙';
+  document.getElementById('micLabel').textContent=rec?'Tap to stop recording':'Tap to start recording';
+}
+
+function startTimer(){
+  seconds=0;
+  timerInterval=setInterval(()=>{
+    seconds++;
+    const m=String(Math.floor(seconds/60)).padStart(2,'0');
+    const s=String(seconds%60).padStart(2,'0');
+    document.getElementById('timer').textContent=m+':'+s;
+  },1000);
+}
+
+function stopTimer(){clearInterval(timerInterval);}
+
+function renderTranscript(){
+  if(!finalTranscript&&!interimTranscript)return;
+  const el=document.getElementById('transcriptText');
+  document.getElementById('transcriptEmpty').style.display='none';
+  el.style.display='block';
+  el.innerHTML=finalTranscript+(interimTranscript?`<span class="interim">${interimTranscript}</span>`:'');
+  document.getElementById('transcriptScroll').scrollTop=99999;
+}
+
+async function generateReport(){
+  const text=finalTranscript.trim();
+  if(!text){showToast('No transcript yet. Record first.','error');return;}
+  switchTab('report');
+  document.getElementById('btnGenerate').disabled=true;
+  document.getElementById('genSpinner').classList.add('active');
+  document.getElementById('genBtnText').textContent='Processing...';
+  document.getElementById('reportEmpty').style.display='none';
+  document.getElementById('reportContent').style.display='none';
+  document.getElementById('processingIndicator').classList.add('active');
+
+  const sys=`You are a medical scribe specializing in GI procedure reports. Extract structured clinical data from transcribed speech. Return ONLY valid JSON, no markdown fences, no preamble.
+
+Return this exact structure (null for missing):
+{
+  "patient":{"name":null,"dob":null,"mrn":null,"referring_physician":null},
+  "procedure":{"type":null,"date":null,"indication":null,"prep_quality":null,"instrument":null,"extent_of_exam":null,"withdrawal_time":null},
+  "findings":{"quality_of_exam":null,"mucosa":null,"polyps":[],"lesions":[],"diverticula":null,"hemorrhoids":null,"inflammation":null,"vascular_abnormalities":null,"other_findings":null},
+  "interventions":[],
+  "specimens":[],
+  "assessment":null,
+  "recommendations":null,
+  "complications":null,
+  "physician":null
+}
+Polyps: {"location":"...","size":"...","morphology":"...","intervention":"..."}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:sys,
+        messages:[{role:'user',content:'Transcript: '+text}]
+      })
+    });
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message);
+    const raw=(data.content||[]).map(i=>i.text||'').join('');
+    const report=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    renderReport(report);
+  }catch(err){
+    console.error(err);
+    showToast('Failed to generate report.','error');
+    document.getElementById('reportEmpty').style.display='flex';
+  }finally{
+    document.getElementById('processingIndicator').classList.remove('active');
+    document.getElementById('btnGenerate').disabled=false;
+    document.getElementById('genSpinner').classList.remove('active');
+    document.getElementById('genBtnText').textContent='✦ Generate Report';
+  }
+}
+
+function renderReport(r){
+  const content=document.getElementById('reportContent');
+  content.style.display='block';
+  const v=x=>(x&&x!=='null')?x:'';
+  let html='';
+
+  const p=r.patient||{};
+  if(v(p.name)||v(p.dob)||v(p.mrn)||v(p.referring_physician)){
+    html+=sec('Patient',[fld('Name',v(p.name)),fld('DOB',v(p.dob)),fld('MRN',v(p.mrn)),fld('Referring MD',v(p.referring_physician))]);
+  }
+  const pr=r.procedure||{};
+  html+=sec('Procedure',[fld('Type',v(pr.type)),fld('Indication',v(pr.indication)),fld('Date',v(pr.date)),fld('Prep Quality',v(pr.prep_quality)),fld('Instrument',v(pr.instrument)),fld('Extent',v(pr.extent_of_exam)),fld('Withdrawal Time',v(pr.withdrawal_time))]);
+
+  const f=r.findings||{};
+  let fr=[fld('Quality',v(f.quality_of_exam)),fld('Mucosa',v(f.mucosa)),fld('Diverticula',v(f.diverticula)),fld('Hemorrhoids',v(f.hemorrhoids)),fld('Inflammation',v(f.inflammation)),fld('Vascular',v(f.vascular_abnormalities)),fld('Other',v(f.other_findings))];
+  if(f.polyps&&f.polyps.length){
+    const tags=f.polyps.map((po,i)=>`<span class="tag tag-finding">Polyp ${i+1}: ${[po.location,po.size,po.morphology,po.intervention].filter(Boolean).join(' · ')}</span>`).join('');
+    fr.push(`<div class="report-field"><div class="report-field-label">Polyps (${f.polyps.length})</div><div style="padding:5px 0">${tags}</div></div>`);
+  }
+  html+=sec('Findings',fr);
+
+  if(r.interventions&&r.interventions.length){
+    const tags=r.interventions.map(i=>`<span class="tag tag-finding">${i}</span>`).join('');
+    html+=sec('Interventions',[`<div class="report-field"><div style="padding:4px 0">${tags}</div></div>`]);
+  }
+  if(r.specimens&&r.specimens.length)html+=sec('Specimens',r.specimens.map(s=>fld('',s)));
+  html+=sec('Assessment & Plan',[fld('Assessment',v(r.assessment)),fld('Recommendations',v(r.recommendations)),fld('Complications',v(r.complications)||'None'),fld('Physician',v(r.physician))]);
+
+  content.innerHTML=html;
+  setTimeout(()=>{content.querySelectorAll('.report-field-value').forEach(el=>{if(el.textContent.trim()&&el.textContent.trim()!=='—'){el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1800);}});},100);
+  showToast('Report ready ✓','success');
+}
+
+function sec(title,rows){
+  const body=rows.join('');
+  if(!body.trim())return'';
+  return`<div class="report-section"><div class="report-section-title">${title}</div>${body}</div>`;
+}
+function fld(label,value){
+  return`<div class="report-field">${label?`<div class="report-field-label">${label}</div>`:''}<div class="report-field-value">${value||''}</div></div>`;
+}
+
+function copyReport(){
+  const content=document.getElementById('reportContent');
+  if(!content.textContent.trim()){showToast('No report yet.','error');return;}
+  let text='GI PROCEDURE REPORT\n'+'='.repeat(36)+'\n\n';
+  content.querySelectorAll('.report-section').forEach(s=>{
+    const title=s.querySelector('.report-section-title')?.textContent||'';
+    text+=title+'\n'+'-'.repeat(title.length)+'\n';
+    s.querySelectorAll('.report-field').forEach(f=>{
+      const label=f.querySelector('.report-field-label')?.textContent||'';
+      const val=f.querySelector('.report-field-value')?.textContent||'';
+      if(val.trim()&&val.trim()!=='—')text+=(label?label+': ':'')+val+'\n';
+    });
+    text+='\n';
+  });
+  navigator.clipboard.writeText(text)
+    .then(()=>showToast('Copied ✓','success'))
+    .catch(()=>showToast('Copy failed','error'));
+}
+
+function showToast(msg,type='info'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+type;
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+window.addEventListener('load',()=>{
+  if(/iPad|iPhone|iPod/.test(navigator.userAgent)){
+    document.getElementById('safariNote').style.display='block';
+  }
+  if(!window.SpeechRecognition&&!window.webkitSpeechRecognition){
+    showToast('Use Safari on iOS 15+ for mic support','error');
+  }
+});
+</script>
+</body>
+</html>

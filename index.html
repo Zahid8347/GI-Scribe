@@ -1,0 +1,2595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GI Scribe">
+<meta name="theme-color" content="#0a0e14">
+<title>GI Scribe</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+:root{
+  --bg:#0a0e14;--surface:#111820;--surface2:#1a2332;--border:#1e2d3d;
+  --accent:#00d4aa;--accent2:#0096ff;--danger:#ff4757;--warn:#ffa502;
+  --text:#e8f0fe;--text-dim:#6b8099;--text-muted:#3d5166;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;position:fixed;width:100%}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+body::before{content:'';position:fixed;inset:0;background:
+  radial-gradient(ellipse 60% 40% at 20% 10%,rgba(0,212,170,.05) 0%,transparent 60%),
+  radial-gradient(ellipse 40% 50% at 80% 80%,rgba(0,150,255,.04) 0%,transparent 60%);
+  pointer-events:none;z-index:0}
+
+/* HEADER */
+header{position:relative;z-index:10;padding:calc(var(--safe-top) + 11px) 18px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(10,14,20,.97);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo-name{font-size:16px;font-weight:600;letter-spacing:-.3px}
+.logo-sub{font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.8px;text-transform:uppercase}
+.status-pill{display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;border:1px solid var(--border);background:var(--surface);transition:all .3s;white-space:nowrap}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--text-muted);transition:all .3s;flex-shrink:0}
+.status-pill.recording{border-color:rgba(255,71,87,.5);color:#ff6b78}
+.status-pill.recording .status-dot{background:var(--danger);box-shadow:0 0 8px var(--danger);animation:blink 1.2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;z-index:5}
+.tab{flex:1;padding:12px 8px;text-align:center;font-size:13px;font-weight:500;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;user-select:none;-webkit-user-select:none}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* PANELS */
+.panels{flex:1;overflow:hidden;position:relative;z-index:1;display:flex;flex-direction:column}
+.panel{display:none;flex-direction:column;flex:1;overflow:hidden}
+.panel.active{display:flex}
+
+/* INPUT MODE TOGGLE */
+.input-mode-toggle{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.mode-btn{flex:1;padding:10px 8px;text-align:center;font-size:12px;font-weight:500;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;user-select:none;-webkit-user-select:none}
+.mode-btn.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(0,212,170,.04)}
+
+/* WAVEFORM */
+.wave-wrap{padding:10px 18px 8px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+canvas#waveform{width:100%;height:44px;display:block;border-radius:5px}
+
+/* BUTTONS */
+.rec-controls{padding:10px 18px;display:flex;gap:9px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0}
+.timer-row{display:none;justify-content:center;align-items:center;gap:8px;padding:5px 0;font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);flex-shrink:0;border-bottom:1px solid var(--border);background:var(--bg)}
+.timer-row.active{display:flex}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 16px;border-radius:11px;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid transparent;font-family:'DM Sans',sans-serif;-webkit-appearance:none;min-height:48px}
+.btn-record{flex:1;background:var(--accent);color:#0a0e14;font-weight:600}
+.btn-record.recording{background:var(--danger);color:#fff}
+.btn-record:active{transform:scale(.97)}
+.btn-sm{background:var(--surface2);color:var(--text-dim);border-color:var(--border);padding:12px 14px;min-height:48px}
+.btn-sm:active{background:#243040}
+.btn:disabled{opacity:.4}
+
+/* TRANSCRIPT */
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 18px}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text-muted);text-align:center}
+.empty-state .icon{font-size:38px;opacity:.4}
+.empty-state p{font-size:13px;line-height:1.7;max-width:240px;color:var(--text-dim)}
+
+/* The corrected transcript — words flash when corrected */
+.transcript-display{font-size:14px;line-height:1.9;color:#c8daf0;white-space:pre-wrap;word-wrap:break-word}
+.transcript-display .corrected{color:var(--accent);font-weight:500;background:rgba(0,212,170,.08);border-radius:3px;padding:0 2px;transition:all .5s}
+.transcript-display .interim{color:var(--text-muted);font-style:italic}
+
+/* PASTE MODE */
+.paste-controls{padding:10px 18px;display:flex;gap:9px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0}
+.btn-accent{background:rgba(0,212,170,.12);color:var(--accent);border:1px solid rgba(0,212,170,.3);padding:11px 15px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;min-height:46px;display:flex;align-items:center;gap:6px;-webkit-appearance:none;flex:1;justify-content:center}
+.btn-accent:active{background:rgba(0,212,170,.22)}
+#pasteArea{flex:1;background:var(--surface2);color:var(--text);border:none;padding:16px 18px;font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.75;resize:none;outline:none;-webkit-appearance:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#pasteArea::placeholder{color:var(--text-muted)}
+.char-count{padding:6px 18px;font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.char-count.active{color:var(--accent)}
+
+/* REPORT PANEL */
+.report-actions{padding:10px 18px;display:flex;gap:9px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0}
+.btn-generate{flex:1;background:linear-gradient(135deg,#005c3a,#003d27);color:#00ffb3;border:1px solid rgba(0,212,170,.3);font-weight:600;font-size:14px;min-height:50px}
+.btn-generate:not(:disabled):active{transform:scale(.98)}
+.btn-copy{background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);padding:12px 14px;font-size:17px;min-height:50px;min-width:50px}
+.spinner{width:15px;height:15px;border:2px solid rgba(0,255,179,.3);border-top-color:#00ffb3;border-radius:50%;animation:spin .8s linear infinite;display:none}
+.spinner.active{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* REPORT CONTENT */
+.proc-type-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;background:rgba(0,150,255,.12);color:var(--accent2);border:1px solid rgba(0,150,255,.25);margin-bottom:16px}
+.report-section{margin-bottom:18px;animation:fadeUp .3s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.section-title{font-size:9px;font-family:'DM Mono',monospace;letter-spacing:1.8px;text-transform:uppercase;color:var(--accent);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid rgba(0,212,170,.15);display:flex;align-items:center;justify-content:space-between}
+.report-field{margin-bottom:8px}
+.field-label{font-size:10px;color:var(--text-dim);margin-bottom:3px;font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+.field-value{font-size:12px;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;line-height:1.6;font-family:'DM Mono',monospace;transition:border-color .4s,box-shadow .4s;min-height:34px}
+.field-value.empty{color:var(--text-muted);font-style:italic}
+.field-value.glow{border-color:rgba(0,212,170,.5);box-shadow:0 0 0 2px rgba(0,212,170,.07)}
+.tag{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;margin:2px 3px 2px 0}
+.tag-blue{background:rgba(0,150,255,.12);color:var(--accent2);border:1px solid rgba(0,150,255,.25)}
+.tag-green{background:rgba(0,212,170,.1);color:var(--accent);border:1px solid rgba(0,212,170,.2)}
+.tag-warn{background:rgba(255,165,2,.1);color:var(--warn);border:1px solid rgba(255,165,2,.2)}
+.tag-danger{background:rgba(255,71,87,.1);color:var(--danger);border:1px solid rgba(255,71,87,.2)}
+
+/* SHIMMER */
+.shimmer-wrap{padding:18px}
+.shimmer{background:linear-gradient(90deg,var(--surface2) 25%,#243040 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:5px;height:14px;margin-bottom:7px}
+@keyframes shimmer{to{background-position:-200% 0}}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(var(--safe-bottom) + 18px);left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:9px;font-size:13px;opacity:0;transition:all .25s;z-index:999;white-space:nowrap;max-width:92vw;text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{border-color:rgba(255,71,87,.5);color:var(--danger)}
+.toast.success{border-color:rgba(0,212,170,.5);color:var(--accent)}
+.toast.info{border-color:rgba(0,150,255,.4);color:var(--accent2)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:200;align-items:center;justify-content:center;padding:22px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px 22px;max-width:330px;width:100%;text-align:center}
+.modal-icon{font-size:40px;margin-bottom:12px}
+.modal h2{font-size:17px;font-weight:600;margin-bottom:9px}
+.modal p{font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:18px}
+.modal-steps{background:var(--surface2);border-radius:9px;padding:12px 14px;margin-bottom:18px;text-align:left}
+.modal-step{font-size:11px;color:var(--text-dim);padding:4px 0;display:flex;gap:9px;font-family:'DM Mono',monospace}
+.step-num{color:var(--accent);font-weight:500;min-width:16px}
+.btn-modal{width:100%;padding:13px;background:var(--accent);color:#0a0e14;border-radius:9px;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-modal-sec{width:100%;padding:11px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:9px;font-size:13px;margin-top:7px;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* CORRECTIONS LEGEND */
+.corrections-bar{display:none;padding:5px 18px;background:rgba(0,212,170,.06);border-bottom:1px solid rgba(0,212,170,.12);font-size:11px;color:var(--accent);font-family:'DM Mono',monospace;flex-shrink:0}
+.corrections-bar.show{display:block}
+
+/* DEBUG OVERLAY */
+#debugOverlay{position:fixed;bottom:0;left:0;right:0;max-height:38vh;overflow-y:auto;background:rgba(0,0,0,.92);border-top:2px solid #ffa502;z-index:9999;display:none;padding:8px 12px;font-family:'DM Mono',monospace;font-size:11px;color:#ffa502;-webkit-overflow-scrolling:touch}
+#debugOverlay.show{display:block}
+.dbg-line{padding:2px 0;border-bottom:1px solid rgba(255,165,2,.1);word-break:break-all}
+.dbg-line.ok{color:#00d4aa}
+.dbg-line.err{color:#ff4757}
+.dbg-line.info{color:#0096ff}
+#debugToggle{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 6px);right:12px;z-index:10000;background:rgba(255,165,2,.15);border:1px solid rgba(255,165,2,.4);color:#ffa502;font-size:10px;padding:5px 9px;border-radius:6px;font-family:'DM Mono',monospace;cursor:pointer;-webkit-appearance:none}
+
+/* EXPORT SHEET */
+.export-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.export-overlay.show{display:flex}
+.export-sheet{background:var(--surface);border:1px solid var(--border);border-radius:22px 22px 0 0;width:100%;max-width:540px;padding:0 0 calc(env(safe-area-inset-bottom,0px) + 8px);animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.export-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 16px}
+.export-title{font-size:13px;font-weight:600;color:var(--text-dim);text-align:center;margin-bottom:18px;letter-spacing:.5px;text-transform:uppercase;font-family:'DM Mono',monospace}
+.export-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 18px 8px}
+.export-btn{display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px 8px;border-radius:14px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;-webkit-appearance:none;font-family:'DM Sans',sans-serif;transition:all .15s}
+.export-btn:active{transform:scale(.95);background:#243040}
+.export-btn-icon{font-size:24px;line-height:1}
+.export-btn-label{font-size:11px;color:var(--text-dim);font-weight:500;text-align:center;line-height:1.3}
+.export-cancel{display:block;width:calc(100% - 36px);margin:10px 18px 4px;padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--text-dim);font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;-webkit-appearance:none;text-align:center}
+.export-cancel:active{background:#243040}
+
+/* TEXT PREVIEW MODAL */
+.preview-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;flex-direction:column;align-items:stretch}
+.preview-overlay.show{display:flex}
+.preview-header{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 14px) 18px 12px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.preview-header-title{font-size:15px;font-weight:600}
+.preview-header-actions{display:flex;gap:8px}
+.preview-action-btn{padding:8px 14px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;border:none;-webkit-appearance:none}
+.preview-action-btn.primary{background:var(--accent);color:#0a0e14}
+.preview-action-btn.secondary{background:var(--surface2);color:var(--text-dim);border:1px solid var(--border)}
+.preview-action-btn:active{opacity:.8}
+#previewTextarea{flex:1;background:var(--bg);color:var(--text);border:none;padding:16px 18px;font-family:'DM Mono',monospace;font-size:12px;line-height:1.75;resize:none;outline:none;-webkit-appearance:none;overflow-y:auto;-webkit-overflow-scrolling:touch;word-wrap:break-word}
+.preview-footer{padding:10px 18px calc(env(safe-area-inset-bottom,0px) + 10px);background:var(--surface);border-top:1px solid var(--border);font-size:11px;color:var(--text-muted);text-align:center;font-family:'DM Mono',monospace;flex-shrink:0}
+
+/* MIC TIP BAR */
+.mic-tip{display:none;padding:7px 18px;background:rgba(255,165,2,.07);border-bottom:1px solid rgba(255,165,2,.18);font-size:11px;color:var(--warn);font-family:'DM Mono',monospace;flex-shrink:0;line-height:1.5;text-align:center}
+.mic-tip.show{display:block}
+
+/* PATIENT ID MODAL */
+.patient-overlay{display:none;position:fixed;inset:0;z-index:500;flex-direction:column;background:var(--bg)}
+.patient-overlay.show{display:flex}
+.patient-header{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px)+12px) 18px 12px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.patient-header-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.patient-close{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* Camera view */
+.camera-area{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+#patientVideo{width:100%;height:100%;object-fit:cover;display:block;background:#000}
+.camera-overlay-ui{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.camera-frame{width:88%;max-width:380px;height:56%;border:2px solid rgba(0,212,170,.7);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);position:relative}
+.camera-frame::before{content:'Point at patient label or wristband';position:absolute;top:-28px;left:0;right:0;text-align:center;font-size:11px;color:rgba(0,212,170,.9);font-family:'DM Mono',monospace;letter-spacing:.5px}
+.camera-frame-corner{position:absolute;width:16px;height:16px;border-color:var(--accent);border-style:solid}
+.camera-frame-corner.tl{top:-1px;left:-1px;border-width:2px 0 0 2px;border-radius:4px 0 0 0}
+.camera-frame-corner.tr{top:-1px;right:-1px;border-width:2px 2px 0 0;border-radius:0 4px 0 0}
+.camera-frame-corner.bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px;border-radius:0 0 0 4px}
+.camera-frame-corner.br{bottom:-1px;right:-1px;border-width:0 2px 2px 0;border-radius:0 0 4px 0}
+
+.camera-controls{padding:16px 18px calc(env(safe-area-inset-bottom,0px)+16px);background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0}
+.shutter-btn{width:68px;height:68px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;-webkit-appearance:none;transition:transform .1s}
+.shutter-btn:active{transform:scale(.92)}
+.camera-alt-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;-webkit-appearance:none;text-align:center;line-height:1.3;flex:1}
+.camera-alt-btn:active{background:rgba(255,255,255,.22)}
+
+/* Processing state */
+.patient-processing{display:none;position:absolute;inset:0;background:rgba(0,0,0,.85);align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:10}
+.patient-processing.show{display:flex}
+.patient-processing-icon{font-size:40px;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.1);opacity:.7}}
+.patient-processing p{font-size:14px;color:rgba(255,255,255,.8);font-family:'DM Mono',monospace;letter-spacing:.5px}
+
+/* Results pane */
+.patient-results{display:none;flex-direction:column;flex:1;overflow:hidden}
+.patient-results.show{display:flex}
+.patient-preview-img{width:100%;max-height:160px;object-fit:cover;object-position:center;flex-shrink:0;filter:brightness(.9)}
+.patient-fields{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 18px}
+.patient-field-row{margin-bottom:14px}
+.patient-field-label{font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.patient-field-found{color:var(--accent)}
+.patient-field-missing{color:var(--text-muted)}
+.patient-field-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;font-family:'DM Mono',monospace;font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;transition:border-color .2s}
+.patient-field-input:focus{border-color:var(--accent)}
+.patient-field-input.populated{border-color:rgba(0,212,170,.4);background:rgba(0,212,170,.04)}
+.patient-actions{padding:12px 18px calc(env(safe-area-inset-bottom,0px)+12px);background:var(--surface);border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0}
+.btn-patient-apply{flex:1;background:var(--accent);color:#0a0e14;padding:14px;border-radius:11px;font-size:15px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-patient-retake{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:14px 18px;border-radius:11px;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* Patient badge in report header */
+.patient-badge{display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.15);border-radius:10px;margin-bottom:14px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text-dim)}
+.patient-badge strong{color:var(--text)}
+
+/* Patient scan button in capture panel */
+.scan-patient-bar{padding:8px 18px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.btn-scan-patient{display:flex;align-items:center;gap:7px;padding:9px 16px;background:rgba(0,150,255,.1);border:1px solid rgba(0,150,255,.3);border-radius:9px;color:var(--accent2);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;-webkit-appearance:none;flex:1;justify-content:center}
+.btn-scan-patient:active{background:rgba(0,150,255,.2)}
+.patient-summary-chip{font-size:11px;color:var(--accent);font-family:'DM Mono',monospace;background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.2);border-radius:6px;padding:3px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
+</head>
+<body>
+
+<!-- Permission Modal -->
+<div class="modal-overlay" id="permModal">
+  <div class="modal">
+    <div class="modal-icon">🎙</div>
+    <h2>Microphone Access</h2>
+    <p>GI Scribe needs microphone access to listen during your procedure.</p>
+    <div class="modal-steps">
+      <div class="modal-step"><span class="step-num">1.</span><span>Tap <strong>Allow</strong> when Safari prompts</span></div>
+      <div class="modal-step"><span class="step-num">2.</span><span>Denied? Settings → Safari → Microphone → Allow</span></div>
+      <div class="modal-step"><span class="step-num">3.</span><span>Connect AirPods <em>before</em> tapping Record</span></div>
+    </div>
+    <button class="btn-modal" onclick="dismissModal()">Got it, Try Again</button>
+    <button class="btn-modal-sec" onclick="dismissModal()">Dismiss</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔬</div>
+    <div>
+      <div class="logo-name">GI Scribe</div>
+      <div class="logo-sub">Procedure Listener</div>
+    </div>
+  </div>
+  <div class="status-pill" id="statusPill">
+    <div class="status-dot"></div>
+    <span id="statusText">Ready</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tabRecord" onclick="switchTab('record')">🎙 Capture</div>
+  <div class="tab" id="tabReport" onclick="switchTab('report')">📄 Report</div>
+</div>
+
+<div class="panels">
+
+  <!-- ═══ CAPTURE PANEL ═══ -->
+  <div class="panel active" id="panelRecord">
+    <div class="input-mode-toggle">
+      <div class="mode-btn active" id="modeVoice" onclick="switchMode('voice')">🎙 Voice Record</div>
+      <div class="mode-btn" id="modePaste" onclick="switchMode('paste')">📋 Paste / Type</div>
+    </div>
+
+    <!-- VOICE SUB-PANEL -->
+    <div id="voiceSubPanel" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <!-- Patient scan bar -->
+      <div class="scan-patient-bar">
+        <button class="btn-scan-patient" onclick="openPatientScanner()">
+          <span>📷</span><span>Scan Patient Label / Wristband</span>
+        </button>
+        <div class="patient-summary-chip" id="patientChip" style="display:none"></div>
+      </div>
+      <div class="wave-wrap"><canvas id="waveform" width="700" height="44"></canvas></div>
+      <div class="mic-tip" id="micTip">
+        📱 Hold phone 15–20cm from your mouth · Speak clearly · Reduce background noise · AirPods give best results
+      </div>
+      <div class="rec-controls">
+        <button class="btn btn-record" id="btnRecord" onclick="toggleRecording()">🎙 Start Recording</button>
+        <button class="btn btn-sm" onclick="clearAll()" title="Clear">✕</button>
+      </div>
+      <div class="timer-row" id="timerRow">
+        <span style="opacity:.6">REC</span>
+        <span id="timer">00:00</span>
+        <span id="corrCount" style="opacity:.5;font-size:10px"></span>
+      </div>
+      <div class="corrections-bar" id="correctionsBar"></div>
+      <div class="scroll-area" id="transcriptScroll">
+        <div class="empty-state" id="transcriptEmpty">
+          <div class="icon">🎤</div>
+          <p>Tap <strong>Start Recording</strong> and dictate the procedure. Terminology is auto-corrected in real time.</p>
+          <p style="font-size:11px;margin-top:4px;color:var(--text-muted)">Works with AirPods via Safari</p>
+        </div>
+        <div class="transcript-display" id="transcriptDisplay" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- PASTE SUB-PANEL -->
+    <div id="pasteSubPanel" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="paste-controls">
+        <button class="btn btn-accent" onclick="pasteClipboard()">📋 Paste from Clipboard</button>
+        <button class="btn btn-sm" onclick="clearPaste()">✕</button>
+      </div>
+      <textarea id="pasteArea"
+        placeholder="Paste or type transcript here...&#10;&#10;The app understands spoken language — you can type naturally or paste from another transcription tool.&#10;&#10;Example: 'we did a colonoscopy, prep was good, reached the TI, found a 6 mil sessile polyp at the sigmoid, did a cold snare, sent to path, no complications'"
+        oninput="onPasteInput()"
+        autocorrect="on" autocapitalize="sentences" spellcheck="true"
+      ></textarea>
+      <div class="char-count" id="charCount">0 characters — type or paste your transcript above</div>
+    </div>
+  </div>
+
+  <!-- ═══ REPORT PANEL ═══ -->
+  <div class="panel" id="panelReport">
+    <div class="report-actions">
+      <button class="btn btn-generate" id="btnGenerate" onclick="generateReport()" disabled>
+        <div class="spinner" id="genSpinner"></div>
+        <span id="genLabel">✦ Generate Report</span>
+      </button>
+      <button class="btn btn-copy" id="btnExport" onclick="openExport()" disabled title="Export report">⬆</button>
+    </div>
+
+    <!-- EXPORT SHEET -->
+    <div class="export-overlay" id="exportOverlay" onclick="closeExport(event)">
+      <div class="export-sheet">
+        <div class="export-handle"></div>
+        <div class="export-title">Export Report</div>
+        <div class="export-grid">
+          <button class="export-btn" onclick="doExport('copy')">
+            <span class="export-btn-icon">📋</span>
+            <span class="export-btn-label">Copy to Clipboard</span>
+          </button>
+          <button class="export-btn" onclick="doExport('share')">
+            <span class="export-btn-icon">⬆️</span>
+            <span class="export-btn-label">Share / AirDrop</span>
+          </button>
+          <button class="export-btn" onclick="doExport('preview')">
+            <span class="export-btn-icon">👁</span>
+            <span class="export-btn-label">View &amp; Select Text</span>
+          </button>
+          <button class="export-btn" onclick="doExport('email')">
+            <span class="export-btn-icon">✉️</span>
+            <span class="export-btn-label">Email</span>
+          </button>
+        </div>
+        <button class="export-cancel" onclick="closeExport()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- TEXT PREVIEW MODAL -->
+    <div class="preview-overlay" id="previewOverlay">
+      <div class="preview-header">
+        <span class="preview-header-title">Report Text</span>
+        <div class="preview-header-actions">
+          <button class="preview-action-btn secondary" onclick="closePreview()">Close</button>
+          <button class="preview-action-btn primary" onclick="copyFromPreview()">Copy All</button>
+        </div>
+      </div>
+      <textarea id="previewTextarea" readonly spellcheck="false"></textarea>
+      <div class="preview-footer" id="previewFooter">Tap and hold to select text — or tap Copy All</div>
+    </div>
+    <div class="scroll-area" id="reportScroll">
+      <div class="empty-state" id="reportEmpty">
+        <div class="icon">📋</div>
+        <p>Capture or paste a transcript, then tap <strong>Generate Report</strong> to produce a structured procedure note.</p>
+      </div>
+      <div id="shimmerWrap" class="shimmer-wrap" style="display:none">
+        <div class="shimmer" style="width:40%;margin-bottom:12px"></div>
+        <div class="shimmer" style="width:88%"></div><div class="shimmer" style="width:68%"></div>
+        <div class="shimmer" style="width:80%"></div><div class="shimmer" style="width:52%;margin-bottom:16px"></div>
+        <div class="shimmer" style="width:38%;margin-bottom:12px"></div>
+        <div class="shimmer" style="width:75%"></div><div class="shimmer" style="width:60%"></div>
+        <div class="shimmer" style="width:85%;margin-bottom:16px"></div>
+      </div>
+      <div id="reportContent" style="display:none;padding-bottom:48px"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  GI SCRIBE — REAL-TIME TERMINOLOGY CORRECTION ENGINE        ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// Each entry: [spokenPattern (regex), correctedText, category]
+// These fire on EACH recognized phrase as it comes in from the mic
+var GI_TERMS = [
+  // ══════════════════════════════════════════════════════════════
+  //  PROCEDURE TYPES
+  // ══════════════════════════════════════════════════════════════
+  [/\bcolon[\s\-]?oscopy\b/gi,                              'colonoscopy'],
+  [/\bupper\s+(?:endo(?:scopy)?|GI\s*scope)\b/gi,           'upper endoscopy (EGD)'],
+  [/\besophago\s*gastro\s*duodeno\s*scopy\b/gi,             'esophagogastroduodenoscopy (EGD)'],
+  [/\bflexible\s+sig(?:moid(?:oscopy)?)?\b/gi,              'flexible sigmoidoscopy'],
+  [/\bsig(?:moid)?\s*oscopy\b/gi,                           'sigmoidoscopy'],
+  [/\bcapsule\s+endo(?:scopy)?\b/gi,                        'capsule endoscopy'],
+  [/\bpill\s*cam\b/gi,                                      'capsule endoscopy (PillCam)'],
+  [/\benteroscopy\b/gi,                                     'enteroscopy'],
+  [/\bdouble[\s\-]?balloon\s+enteroscopy\b/gi,              'double-balloon enteroscopy (DBE)'],
+
+  // ══════════════════════════════════════════════════════════════
+  //  ANATOMY — COLON
+  // ══════════════════════════════════════════════════════════════
+  [/\bterminal\s+il(?:e(?:um|al)|ium)\b/gi,                 'terminal ileum (TI)'],
+  [/\bthe\s+T\.?I\.?\b/g,                                   'the terminal ileum (TI)'],
+  [/\bileo[\s\-]?cecal\s+valve\b/gi,                        'ileocecal valve (ICV)'],
+  [/\bI\.?C\.?V\.?\b/g,                                     'ileocecal valve (ICV)'],
+  [/\bcec(?:al|um)\s+intubation\b/gi,                       'cecal intubation'],
+  [/\bintubated\s+(?:the\s+)?cecum\b/gi,                    'cecal intubation achieved'],
+  [/\breached\s+(?:the\s+)?cecum\b/gi,                      'cecal intubation achieved (complete colonoscopy)'],
+  [/\bscope\s+advanced\s+to\s+(?:the\s+)?cecum\b/gi,        'scope advanced to cecum (complete colonoscopy)'],
+  [/\bcecum\b/gi,                                           'cecum'],
+  [/\bascending\s+colon\b/gi,                               'ascending colon'],
+  [/\bhepatic\s+flex(?:ure)?\b/gi,                          'hepatic flexure'],
+  [/\btransverse\s+colon\b/gi,                              'transverse colon'],
+  [/\bsplenic\s+flex(?:ure)?\b/gi,                          'splenic flexure'],
+  [/\bdescending\s+colon\b/gi,                              'descending colon'],
+  [/\bsigmoid(?:\s+colon)?\b/gi,                            'sigmoid colon'],
+  [/\brecto[\s\-]?sigmoid(?:\s+junction)?\b/gi,             'rectosigmoid junction'],
+  [/\brectum\b/gi,                                          'rectum'],
+  [/\banal\s+canal\b/gi,                                    'anal canal'],
+  [/\bdentate\s+line\b/gi,                                  'dentate line'],
+  [/\bpectinate\s+line\b/gi,                                'pectinate (dentate) line'],
+  [/\brectroflexion\b/gi,                                   'retroflexion'],
+  [/\bretroflexion\b/gi,                                    'retroflexion'],
+  [/\bloss\s+of\s+haustr(?:a|ae|al)\b/gi,                   'loss of haustral folds'],
+  [/\bhaustr(?:a|ae|al)\b/gi,                               'haustral folds'],
+
+  // ══════════════════════════════════════════════════════════════
+  //  ANATOMY — UPPER GI
+  // ══════════════════════════════════════════════════════════════
+  [/\besophag(?:us|eal|al)\b/gi,                            'esophagus'],
+  [/\bG[\s\.]?E[\s\.]?\s*junction\b/gi,                     'GE junction (gastroesophageal junction)'],
+  [/\bgastro[\s\-]?esoph(?:ageal)?\s+junction\b/gi,         'gastroesophageal junction (GEJ)'],
+  [/\bZ[\s\-]?line\b/gi,                                    'Z-line (squamocolumnar junction)'],
+  [/\bsquamo[\s\-]?columnar\s+junction\b/gi,                'squamocolumnar junction (Z-line)'],
+  [/\bS\.?C\.?J\.?\b/g,                                     'squamocolumnar junction (Z-line)'],
+  [/\bgastric\s+cardia\b/gi,                                'gastric cardia'],
+  [/\bcardia\b/gi,                                          'gastric cardia'],
+  [/\bgastric\s+fund(?:us|al)\b/gi,                         'gastric fundus'],
+  [/\bfundus\b/gi,                                          'gastric fundus'],
+  [/\bgastric\s+body\b/gi,                                  'gastric body'],
+  [/\bgastric\s+antrum\b/gi,                                'gastric antrum'],
+  [/\bantrum\b/gi,                                          'gastric antrum'],
+  [/\bincisura\s*(?:angularis)?\b/gi,                       'incisura angularis'],
+  [/\bpyloric\s+channel\b/gi,                               'pyloric channel'],
+  [/\bpylorus\b/gi,                                         'pylorus'],
+  [/\bpylorus\s+was\s+patent\b/gi,                          'pylorus patent'],
+  [/\bduodenal\s+bulb\b/gi,                                 'duodenal bulb (D1)'],
+  [/\bD[\s\.]?1\b/g,                                        'duodenal bulb (D1)'],
+  [/\bsecond\s+(?:part\s+(?:of\s+)?)?(?:the\s+)?duodenum\b/gi, 'second part of duodenum (D2)'],
+  [/\bD[\s\.]?2\b/g,                                        'second part of duodenum (D2)'],
+  [/\bampulla(?:\s+of\s+Vater)?\b/gi,                       'ampulla of Vater'],
+  [/\bbile\s+duct\s+cannulation\s+(?:was\s+)?achieved\b/gi, 'bile duct cannulation'],
+  [/\bC\.?B\.?D\.?\b/g,                                     'CBD (common bile duct)'],
+  [/\bpancreatic\s+duct\b/gi,                               'pancreatic duct (Wirsung)'],
+  [/\bbiliary\s+tract\b/gi,                                 'biliary tract'],
+
+  // ══════════════════════════════════════════════════════════════
+  //  BOWEL PREP — all word orders
+  // ══════════════════════════════════════════════════════════════
+  [/\b(?:excellent|great|outstanding|perfect|clean)\s+(?:bowel\s+)?prep(?:aration)?\b/gi,        'excellent bowel preparation (BBPS 8-9/9)'],
+  [/\b(?:bowel\s+)?prep(?:aration|p)?\s+(?:quality\s+)?(?:was\s+)?(?:excellent|great|outstanding|perfect|clean)\b/gi, 'excellent bowel preparation (BBPS 8-9/9)'],
+  [/\b(?:good|adequate|satisfactory|acceptable)\s+(?:bowel\s+)?prep(?:aration)?\b/gi,            'good bowel preparation (BBPS 6-7/9)'],
+  [/\b(?:bowel\s+)?prep(?:aration|p)?\s+(?:quality\s+)?(?:was\s+)?(?:good|adequate|satisfactory|acceptable)\b/gi, 'good bowel preparation (BBPS 6-7/9)'],
+  [/\b(?:fair|suboptimal|suboptimal)\s+(?:bowel\s+)?prep(?:aration)?\b/gi,                       'fair bowel preparation (BBPS 4-5/9)'],
+  [/\b(?:bowel\s+)?prep(?:aration|p)?\s+(?:quality\s+)?(?:was\s+)?(?:fair|suboptimal|okay|ok)\b/gi, 'fair bowel preparation (BBPS 4-5/9)'],
+  [/\b(?:poor|inadequate|bad|terrible|substandard)\s+(?:bowel\s+)?prep(?:aration)?\b/gi,         'inadequate bowel preparation (BBPS <4/9)'],
+  [/\b(?:bowel\s+)?prep(?:aration|p)?\s+(?:quality\s+)?(?:was\s+)?(?:poor|inadequate|bad|terrible)\b/gi, 'inadequate bowel preparation (BBPS <4/9)'],
+  [/\bB\.?B\.?P\.?S\.?\s*(?:score\s+)?(?:was\s+)?(\d)\b/gi, 'BBPS score $1/9'],
+
+  // ══════════════════════════════════════════════════════════════
+  //  SIZE — all spoken forms
+  // ══════════════════════════════════════════════════════════════
+  [/\b(\d+(?:\.\d+)?)\s*(?:milli?meters?|milla?meters?|millometers?|milometers?|mils?|m\.m\.?)\b/gi, '$1mm'],
+  [/\bhalf\s+(?:a\s+)?centimeter\b/gi,                     '5mm'],
+  [/\bone\s+centimeter\b/gi,                               '10mm'],
+  [/\bone\s+and\s+a\s+half\s+centimeters?\b/gi,            '15mm'],
+  [/\btwo\s+centimeters?\b/gi,                             '20mm'],
+  [/\bthree\s+centimeters?\b/gi,                           '30mm'],
+  [/\b(\d+(?:\.\d+)?)\s*(?:centimeters?|c\.m\.?)\b/gi,     '$1cm'],
+  [/\bapproximately\s+(\d+mm)\b/gi,                        'approximately $1'],
+  [/\bmeasuring\s+(\d+(?:\.\d+)?)\s*(?:mm|cm)\b/gi,        'measuring $1$2'],
+
+  // ══════════════════════════════════════════════════════════════
+  //  POLYP MORPHOLOGY
+  // ══════════════════════════════════════════════════════════════
+  [/\bsessile\s+serrated\s+adenoma\b/gi,                   'sessile serrated adenoma (SSA)'],
+  [/\bsessile\s+serrated\s+lesion\b/gi,                    'sessile serrated lesion (SSL)'],
+  [/\bS\.?S\.?A\.?\b/g,                                    'sessile serrated adenoma (SSA)'],
+  [/\bS\.?S\.?L\.?\b/g,                                    'sessile serrated lesion (SSL)'],
+  [/\btraditional\s+serrated\s+adenoma\b/gi,               'traditional serrated adenoma (TSA)'],
+  [/\bT\.?S\.?A\.?\b/g,                                    'traditional serrated adenoma (TSA)'],
+  [/\bpedunculated(?:\s+polyp)?\b/gi,                      'pedunculated polyp (Paris Ip)'],
+  [/\bsessile(?:\s+polyp)?\b/gi,                           'sessile polyp (Paris Is)'],
+  [/\bflat[\s\-]?elevated(?:\s+lesion)?\b/gi,              'flat-elevated lesion (Paris IIa)'],
+  [/\bflat(?:\s+(?:polyp|lesion|adenoma))?\b/gi,           'flat lesion (Paris IIa)'],
+  [/\bdepressed(?:\s+lesion)?\b/gi,                        'depressed lesion (Paris IIc)'],
+  [/\btubulovillous\s+adenoma\b/gi,                        'tubulovillous adenoma (TVA)'],
+  [/\btubulo[\s\-]?villous\b/gi,                           'tubulovillous adenoma (TVA)'],
+  [/\btubular\s+adenoma\b/gi,                              'tubular adenoma (TA)'],
+  [/\bvillous\s+adenoma\b/gi,                              'villous adenoma'],
+  [/\bhyperplastic(?:\s+polyp)?\b/gi,                      'hyperplastic polyp'],
+  [/\bdiminutive(?:\s+polyp)?\b/gi,                        'diminutive polyp (<5mm)'],
+  [/\badenomatous(?:\s+polyp)?\b/gi,                       'adenomatous polyp'],
+  [/\badvanced\s+adenoma\b/gi,                             'advanced adenoma'],
+  [/\bhigh[\s\-]?risk\s+adenoma\b/gi,                      'high-risk adenoma'],
+  [/\bserrated\s+adenoma\b/gi,                             'serrated adenoma'],
+  [/\bhamartomatous(?:\s+polyp)?\b/gi,                     'hamartomatous polyp'],
+  [/\bjuvenile\s+polyp\b/gi,                               'juvenile polyp'],
+  [/\bfiliform\s+polyp\b/gi,                               'filiform (worm-like) polyp'],
+
+  // ══════════════════════════════════════════════════════════════
+  //  INTERVENTIONS
+  // ══════════════════════════════════════════════════════════════
+  [/\bcold\s+snare(?:\s+(?:polypectomy|technique|resection))?\b/gi,  'cold snare polypectomy (CSP)'],
+  [/\bC\.?S\.?P\.?\b/g,                                    'cold snare polypectomy (CSP)'],
+  [/\bhot\s+snare(?:\s+(?:polypectomy|technique|resection))?\b/gi,   'hot snare polypectomy (HSP)'],
+  [/\bH\.?S\.?P\.?\b/g,                                    'hot snare polypectomy (HSP)'],
+  [/\bcold\s+(?:biopsy\s+)?forceps(?:\s+(?:biopsy|polypectomy))?\b/gi, 'cold forceps biopsy'],
+  [/\bhot\s+(?:biopsy\s+)?forceps(?:\s+(?:biopsy|cautery|coagulation))?\b/gi, 'hot biopsy forceps cautery'],
+  [/\bpolypectomy\s+(?:was\s+)?performed\b/gi,             'polypectomy performed'],
+  [/\bpolypectomy\b/gi,                                    'polypectomy'],
+  [/\bendoscopic\s+mucosal\s+resection\b/gi,               'endoscopic mucosal resection (EMR)'],
+  [/\bE\.?M\.?R\.?\b/g,                                    'EMR (endoscopic mucosal resection)'],
+  [/\bendoscopic\s+sub[\s\-]?mucosal\s+dissection\b/gi,    'endoscopic submucosal dissection (ESD)'],
+  [/\bE\.?S\.?D\.?\b/g,                                    'ESD (endoscopic submucosal dissection)'],
+  [/\bargon\s+plasma\s+coagulation\b/gi,                   'argon plasma coagulation (APC)'],
+  [/\bA\.?P\.?C\.?\b/g,                                    'APC (argon plasma coagulation)'],
+  [/\bhemo[\s\-]?clip(?:s)?\b/gi,                          'hemoclip(s)'],
+  [/\bendo[\s\-]?clip(?:s)?\b/gi,                          'endoclip(s)'],
+  [/\btwo\s+hemoclips\b/gi,                                'two hemoclips'],
+  [/\bvariceal\s+banding\b/gi,                             'endoscopic variceal ligation (EVL)'],
+  [/\bband\s+ligation\b/gi,                                'endoscopic band ligation (EVL)'],
+  [/\bE\.?V\.?L\.?\b/g,                                    'endoscopic variceal ligation (EVL)'],
+  [/\bepinephrine\s+injection\b/gi,                        'epinephrine injection'],
+  [/\binjection\s+therapy\b/gi,                            'injection therapy'],
+  [/\bballoon\s+dilation\b/gi,                             'balloon dilation'],
+  [/\besophageal\s+dilation\b/gi,                          'esophageal dilation'],
+  [/\bstricture\s+dilation\b/gi,                           'stricture dilation'],
+  [/\bself[\s\-]?expanding\s+metal\s+stent\b/gi,           'self-expanding metal stent (SEMS)'],
+  [/\bS\.?E\.?M\.?S\.?\b/g,                                'SEMS (self-expanding metal stent)'],
+  [/\bbiliary\s+stent\b/gi,                                'biliary stent'],
+  [/\bpancreatic\s+stent\b/gi,                             'pancreatic stent'],
+  [/\bsubmucosal\s+tattoo\b/gi,                            'submucosal tattoo (India ink)'],
+  [/\bspot\s+tattoo\b/gi,                                  'submucosal tattoo (India ink)'],
+  [/\btattoo\s+(?:was\s+)?placed\b/gi,                     'India ink tattoo placed'],
+  [/\bindia\s+ink\b/gi,                                    'India ink tattoo'],
+  // NOTE: submucosal injection must NOT match submucosal mass/lesion/tumor
+  [/\bsubmucosal\s+(?:injection|inject|lift|saline|fluid)\b/gi, 'submucosal injection'],
+  [/\bsubmucosal\s+(?:mass|lesion|tumor|nodule)\b/gi,      'submucosal lesion'],
+  [/\bsubepithelial\s+(?:mass|lesion|tumor|nodule)?\b/gi,  'subepithelial lesion'],
+  [/\bbrush\s+cytology\b/gi,                               'brush cytology'],
+  [/\bfine\s+needle\s+aspiration\b/gi,                     'fine needle aspiration (FNA)'],
+  [/\bF\.?N\.?A\.?\b/g,                                    'FNA (fine needle aspiration)'],
+  [/\bplaced\s+in\s+formalin\b/gi,                         'placed in formalin'],
+  [/\bformalin\s+(?:container|jar|bottle)\b/gi,            'formalin container'],
+  [/\bsent\s+(?:it\s+)?to\s+path(?:ology)?\b/gi,           'specimen submitted to pathology'],
+  [/\bsubmitted?\s+(?:it\s+)?to\s+path(?:ology)?\b/gi,     'specimen submitted to pathology'],
+  [/\bsent\s+for\s+path(?:ology)?\b/gi,                    'specimen submitted to pathology'],
+  [/\bpath(?:ology)?\s+(?:bottle|jar|container)\b/gi,      'specimen submitted to pathology'],
+  [/\bbiopsi(?:es|ed)?\s+(?:were\s+)?(?:taken|obtained|performed|done)\b/gi, 'biopsies taken'],
+  [/\btook\s+(?:a\s+)?(?:set\s+of\s+)?biopsies\b/gi,       'biopsies taken'],
+  [/\bbiopsy\s+(?:was\s+)?taken\b/gi,                      'biopsy taken'],
+  [/\bfour[\s\-]?quadrant\s+biopsies\b/gi,                 'four-quadrant biopsies'],
+  [/\bSeattle\s+protocol\b/gi,                             'Seattle protocol (4-quadrant biopsies q2cm)'],
+  // ERCP specific
+  [/\bsphincter(?:o)?tomy\b/gi,                            'sphincterotomy'],
+  [/\bbiliary\s+sphincter(?:o)?tomy\b/gi,                  'biliary sphincterotomy'],
+  [/\bstone\s+extraction\b/gi,                             'stone extraction'],
+  [/\bcholedocholithiasis\b/gi,                            'choledocholithiasis (CBD stones)'],
+  [/\bC\.?B\.?D\.?\s+stone\b/gi,                           'CBD stone'],
+  [/\bcontrast\s+(?:was\s+)?injected\b/gi,                 'contrast injected'],
+  [/\bfluoroscopy\b/gi,                                    'fluoroscopy'],
+  [/\bcannulation\b/gi,                                    'cannulation'],
+  [/\bdeep\s+cannulation\b/gi,                             'deep bile duct cannulation'],
+  [/\bbile\s+duct\s+cannulation\b/gi,                      'bile duct cannulation achieved'],
+  [/\bsweep\s+of\s+(?:the\s+)?bile\s+duct\b/gi,            'balloon sweep of bile duct'],
+
+  // ══════════════════════════════════════════════════════════════
+  //  MUCOSAL FINDINGS
+  // ══════════════════════════════════════════════════════════════
+  [/\bnormal[\s\-]?appearing\s+mucosa\b/gi,                'normal-appearing mucosa'],
+  [/\bnormal\s+mucosa\b/gi,                                'normal mucosa'],
+  [/\bunremarkable\s+mucosa\b/gi,                          'unremarkable mucosa'],
+  [/\berythematous\s+mucosa\b/gi,                          'erythematous mucosa'],
+  [/\bmucosal\s+erythema\b/gi,                             'mucosal erythema'],
+  [/\bfriable\s+mucosa\b/gi,                               'friable mucosa'],
+  [/\bcontact\s+bleeding\b/gi,                             'contact bleeding (friability)'],
+  [/\bmucosal\s+friabilit(?:y|ies)\b/gi,                   'mucosal friability'],
+  [/\bloss\s+of\s+vascular\s+pattern\b/gi,                 'loss of vascular pattern'],
+  [/\bgranular(?:\s+mucosa)?\b/gi,                         'granular mucosa'],
+  [/\bcobbleston(?:ing|e)\b/gi,                            'cobblestoning of mucosa'],
+  [/\bskip\s+lesions?\b/gi,                                'skip lesions'],
+  [/\baph(?:t|th)ous\s+ulcer(?:s|ation)?\b/gi,             'aphthous ulcer(s)'],
+  [/\bdeep\s+ulceration(?:s)?\b/gi,                        'deep ulceration(s)'],
+  [/\blinear\s+ulcer(?:s|ation)?\b/gi,                     'linear ulcer(s)'],
+  [/\bserpig(?:i|in)ous\s+ulcer(?:s|ation)?\b/gi,          'serpiginous ulceration'],
+  // pseudopolyps — keep it clean, no garbling
+  [/\binflammatory\s+pseudo[\s\-]?polyp(?:s)?\b/gi,        'inflammatory pseudopolyp(s)'],
+  [/\bpseudo[\s\-]?polyp(?:s)?\b/gi,                       'pseudopolyp(s)'],
+  [/\bsalmon[\s\-]?(?:colored?|pink)\s+(?:epithelium|mucosa)?\b/gi, "salmon-colored epithelium (Barrett's)"],
+  [/\btongues?\s+of\s+(?:salmon[\s\-]?colored?\s+)?epithelium\b/gi, "tongues of salmon-colored epithelium (Barrett's)"],
+
+  // ══════════════════════════════════════════════════════════════
+  //  GI DIAGNOSES
+  // ══════════════════════════════════════════════════════════════
+  [/\bdiverticulosis\b/gi,                                 'diverticulosis'],
+  [/\bdiverticulitis\b/gi,                                 'acute diverticulitis'],
+  [/\bcolonic?\s+diverticula\b/gi,                         'colonic diverticula'],
+  [/\binternal\s+hemorrhoids?\b/gi,                        'internal hemorrhoids'],
+  [/\bexternal\s+hemorrhoids?\b/gi,                        'external hemorrhoids'],
+  [/\bhemorrhoids?\s+(?:were\s+)?(?:noted|seen|present|identified)\b/gi, 'hemorrhoids noted'],
+  [/\bhemorrhoids?\b/gi,                                   'hemorrhoids'],
+  [/\banal\s+fissure\b/gi,                                 'anal fissure'],
+  [/\banal\s+stenosis\b/gi,                                'anal stenosis'],
+  [/\brectal\s+prolapse\b/gi,                              'rectal prolapse'],
+  [/\bBarrett'?s?\s*(?:esophagus)?\b/gi,                   "Barrett's esophagus"],
+  [/\bhiatal\s+hernia\b/gi,                                'hiatal hernia'],
+  [/\bgastritis\b/gi,                                      'gastritis'],
+  [/\bgastric\s+ulcer\b/gi,                                'gastric ulcer'],
+  [/\bduodenal\s+ulcer\b/gi,                               'duodenal ulcer'],
+  [/\bpeptic\s+ulcer(?:\s+disease)?\b/gi,                  'peptic ulcer disease (PUD)'],
+  [/\bP\.?U\.?D\.?\b/g,                                    'peptic ulcer disease (PUD)'],
+  [/\bduodenitis\b/gi,                                     'duodenitis'],
+  [/\besophagitis\s+(?:grade\s+)?([A-D])\b/gi,             'LA Grade $1 esophagitis'],
+  [/\bgrade\s+([A-D])\s+esophagitis\b/gi,                  'LA Grade $1 esophagitis'],
+  [/\bL\.?A\.?\s*grade\s+([A-D])\b/gi,                     'LA Grade $1 esophagitis'],
+  [/\besophagitis\b/gi,                                    'esophagitis'],
+  [/\beosinophilic\s+esophagitis\b/gi,                     'eosinophilic esophagitis (EoE)'],
+  [/\bE\.?o\.?E\.?\b/g,                                    'eosinophilic esophagitis (EoE)'],
+  [/\bG\.?E\.?R\.?D\.?\b/g,                                'GERD (gastroesophageal reflux disease)'],
+  [/\breflux\s+esophagitis\b/gi,                           'reflux esophagitis (GERD)'],
+  [/\bCrohn'?s?\s*(?:disease)?\b/gi,                       "Crohn's disease"],
+  [/\bulcerative\s+colitis\b/gi,                           'ulcerative colitis (UC)'],
+  [/\bI\.?B\.?D\.?\b/g,                                    'inflammatory bowel disease (IBD)'],
+  [/\bischemic\s+colitis\b/gi,                             'ischemic colitis'],
+  [/\bmicroscopic\s+colitis\b/gi,                          'microscopic colitis'],
+  [/\bcollagenous\s+colitis\b/gi,                          'collagenous colitis'],
+  [/\blymphocytic\s+colitis\b/gi,                          'lymphocytic colitis'],
+  [/\bangiodysplasia\b/gi,                                 'angiodysplasia'],
+  [/\bA\.?V\.?M\.?\b/g,                                    'arteriovenous malformation (AVM)'],
+  [/\bDieulafoy'?s?\s*(?:lesion)?\b/gi,                    "Dieulafoy's lesion"],
+  [/\bG\.?A\.?V\.?E\.?\b/g,                                'GAVE (gastric antral vascular ectasia)'],
+  [/\bwatermelon\s+stomach\b/gi,                           'GAVE (gastric antral vascular ectasia)'],
+  [/\bgastric\s+antral\s+vascular\s+ectasia\b/gi,          'GAVE (gastric antral vascular ectasia)'],
+  [/\bMallory[\s\-]?Weiss(?:\s+tear)?\b/gi,                'Mallory-Weiss tear'],
+  [/\besophageal\s+varices\b/gi,                           'esophageal varices'],
+  [/\bgastric\s+varices\b/gi,                              'gastric varices'],
+  [/\bvarices\b/gi,                                        'varices'],
+  [/\bportal\s+hypertensive\s+gastropathy\b/gi,            'portal hypertensive gastropathy (PHG)'],
+  [/\bP\.?H\.?G\.?\b/g,                                    'portal hypertensive gastropathy (PHG)'],
+  [/\bbile\s+reflux\b/gi,                                  'bile reflux'],
+  [/\bcoffee\s+grounds\b/gi,                               'coffee grounds (blood)'],
+  [/\bfresh\s+blood\b/gi,                                  'fresh blood'],
+  [/\bactive\s+bleeding\b/gi,                              'active bleeding'],
+  [/\boozing\b/gi,                                         'oozing'],
+  [/\bvisible\s+vessel\b/gi,                               'visible vessel (stigmata of recent hemorrhage)'],
+  [/\bthe\s+vessel\s+was\s+visible\b/gi,                   'visible vessel (stigmata of recent hemorrhage)'],
+  [/\bstigmata\s+of\s+(?:recent\s+)?hemorrhage\b/gi,       'stigmata of recent hemorrhage (SRH)'],
+  [/\bS\.?R\.?H\.?\b/g,                                    'stigmata of recent hemorrhage (SRH)'],
+  [/\bG\.?I\.?S\.?T\.?\b/g,                                'gastrointestinal stromal tumor (GIST)'],
+  [/\blipoma\b/gi,                                         'lipoma'],
+  [/\bcarcinoid\s+tumor\b/gi,                              'carcinoid tumor'],
+  [/\bN\.?E\.?T\.?\b/g,                                    'neuroendocrine tumor (NET)'],
+  [/\bneuroendocrine\s+tumor\b/gi,                         'neuroendocrine tumor (NET)'],
+  [/\bH\.?\s*pylori\b/gi,                                  'H. pylori'],
+  [/\bHelicobacter\s+pylori\b/gi,                          'Helicobacter pylori (H. pylori)'],
+  [/\bC\.?L\.?O\.?\s*(?:test)?\b/g,                        'CLO test (rapid urease test)'],
+  [/\brapid\s+urease\s+test\b/gi,                          'rapid urease test (RUT)'],
+  [/\bceliac\s*(?:disease|sprue)?\b/gi,                    'celiac disease'],
+  [/\bvillous\s+atrophy\b/gi,                              'villous atrophy'],
+  [/\bmelanosis\s+coli\b/gi,                               'melanosis coli'],
+  [/\blow[\s\-]?grade\s+dysplasia\b/gi,                    'low-grade dysplasia (LGD)'],
+  [/\bhigh[\s\-]?grade\s+dysplasia\b/gi,                   'high-grade dysplasia (HGD)'],
+  [/\bL\.?G\.?D\.?\b/g,                                    'low-grade dysplasia (LGD)'],
+  [/\bH\.?G\.?D\.?\b/g,                                    'high-grade dysplasia (HGD)'],
+  [/\bintramucosal\s+carcinoma\b/gi,                       'intramucosal carcinoma'],
+  [/\badenocarcinoma\b/gi,                                 'adenocarcinoma'],
+  [/\bsquamous\s+cell\s+carcinoma\b/gi,                    'squamous cell carcinoma (SCC)'],
+  [/\bstoma\b/gi,                                          'stoma'],
+
+  // ══════════════════════════════════════════════════════════════
+  //  EXAM QUALITY / TECHNIQUE
+  // ══════════════════════════════════════════════════════════════
+  [/\bintubated\s+(?:the\s+)?terminal\s+ileum\b/gi,        'terminal ileum intubated'],
+  [/\breached\s+(?:the\s+)?terminal\s+ileum\b/gi,          'terminal ileum intubated'],
+  [/\bwith(?:drawal)?\s+time\s+(?:was\s+)?(\d+(?:\.\d+)?)\s*(?:min(?:ute)?s?)?\b/gi, 'withdrawal time: $1 minutes'],
+  [/\b(\d+(?:\.\d+)?)\s*(?:min(?:ute)?s?)\s+withdrawal\b/gi, 'withdrawal time: $1 minutes'],
+  [/\bscope\s+(?:was\s+)?withdrawn\s+(?:slowly|carefully)?\b/gi, 'scope withdrawn with careful inspection'],
+  [/\binspection\s+on\s+withdrawal\b/gi,                   'careful inspection on withdrawal'],
+  [/\bcomplete\s+colonoscopy\b/gi,                         'complete colonoscopy'],
+  [/\bincomplete\s+colonoscopy\b/gi,                       'incomplete colonoscopy'],
+  [/\bnarrow\s+band\s+imaging\b/gi,                        'narrow band imaging (NBI)'],
+  [/\bN\.?B\.?I\.?\b/g,                                    'narrow band imaging (NBI)'],
+  [/\bchromoendoscopy\b/gi,                                'chromoendoscopy'],
+  [/\bwater\s+(?:exchange|immersion)\s+technique\b/gi,     'water exchange technique'],
+  [/\bco[\s\-]?2\s+(?:was\s+used\s+for\s+)?insufflation\b/gi, 'CO₂ insufflation'],
+  [/\bcarbon\s+dioxide\s+insufflation\b/gi,                'CO₂ insufflation'],
+  [/\bair\s+(?:was\s+used\s+for\s+)?insufflation\b/gi,     'air insufflation'],
+  [/\bwater\s+insufflation\b/gi,                           'water insufflation'],
+  [/\bretroflexion\s+(?:was\s+)?performed\b/gi,            'retroflexion performed'],
+  [/\bno\s+blind\s+spots\b/gi,                             'no blind spots'],
+  [/\badequate\s+visualization\b/gi,                       'adequate visualization'],
+  [/\bpoor\s+visualization\b/gi,                           'poor visualization'],
+  [/\badenoma\s+detection\s+rate\b/gi,                     'adenoma detection rate (ADR)'],
+  [/\bA\.?D\.?R\.?\b/g,                                    'adenoma detection rate (ADR)'],
+
+  // ══════════════════════════════════════════════════════════════
+  //  SEDATION
+  // ══════════════════════════════════════════════════════════════
+  [/\bpropofol\b/gi,                                       'propofol'],
+  [/\bmoderate\s+sedation\b/gi,                            'moderate (conscious) sedation'],
+  [/\bconscious\s+sedation\b/gi,                           'moderate (conscious) sedation'],
+  [/\bM\.?A\.?C\.?\s*(?:anesthesia)?\b/g,                  'MAC anesthesia'],
+  [/\bC\.?R\.?N\.?A\.?\b/g,                                'CRNA (anesthesia)'],
+  [/\bmidazolam\b/gi,                                      'midazolam (Versed)'],
+  [/\bversed\b/gi,                                         'midazolam (Versed)'],
+  [/\bfentanyl\b/gi,                                       'fentanyl'],
+  [/\bmeperidine\b/gi,                                     'meperidine (Demerol)'],
+  [/\bdemerol\b/gi,                                        'meperidine (Demerol)'],
+  [/\bunsedated\b/gi,                                      'unsedated procedure'],
+  [/\bno\s+sedation\b/gi,                                  'procedure without sedation'],
+
+  // ══════════════════════════════════════════════════════════════
+  //  COMPLICATIONS / END OF PROCEDURE
+  // ══════════════════════════════════════════════════════════════
+  [/\bno\s+(?:immediate\s+)?complications?\s*(?:were\s+)?(?:encountered|noted|seen|identified|occurred)?\b/gi, 'no complications'],
+  [/\bprocedure\s+(?:was\s+)?(?:completed\s+)?(?:without|w\/o)\s+complication\b/gi, 'procedure completed without complication'],
+  [/\buncomplicated\s+procedure\b/gi,                      'procedure uncomplicated'],
+  [/\bprocedure\s+(?:was\s+)?uncomplicated\b/gi,           'procedure uncomplicated'],
+  [/\btolerated\s+(?:the\s+)?procedure\s+well\b/gi,        'tolerated procedure well'],
+  [/\bpatient\s+tolerated\s+(?:the\s+procedure\s+)?well\b/gi, 'patient tolerated procedure well'],
+  [/\btaken\s+to\s+recovery\b/gi,                          'taken to recovery in stable condition'],
+  [/\bpost[\s\-]?(?:procedure|op(?:erative)?)\s+instructions?\b/gi, 'post-procedure instructions given'],
+  [/\bpost[\s\-]?polypectomy\s+(?:syndrome|bleed(?:ing)?)\b/gi, 'post-polypectomy syndrome'],
+  [/\bimmediate\s+(?:post[\s\-]?polypectomy\s+)?bleeding\b/gi, 'immediate post-polypectomy bleeding'],
+  [/\bhemostasis\s+(?:was\s+)?achieved\b/gi,               'hemostasis achieved'],
+  [/\bperforation\b/gi,                                    'perforation'],
+  [/\badverse\s+event\b/gi,                                'adverse event'],
+
+  // ══════════════════════════════════════════════════════════════
+  //  PATHOLOGY TERMS
+  // ══════════════════════════════════════════════════════════════
+  [/\btubular\s+adenoma\b/gi,                              'tubular adenoma (TA)'],
+  [/\badvanced\s+adenoma\b/gi,                             'advanced adenoma'],
+  [/\bsynchronous\s+(?:polyp|lesion|adenoma)\b/gi,         'synchronous lesion'],
+  [/\bmetachronous\s+(?:polyp|lesion|adenoma)\b/gi,        'metachronous lesion'],
+];
+
+// ══════════════════════════════════════════════════════════════
+//  PHONETIC CORRECTIONS — iOS SR mishearings
+// ══════════════════════════════════════════════════════════════
+var GI_PHONETIC = [
+  // Procedures
+  [/\bkala\s+nasaki\b/gi,                                  'colonoscopy'],
+  [/\bcolonel\s+Oscar\b/gi,                                'colonoscopy'],
+  [/\bupper\s+and\b/gi,                                    'upper endoscopy (EGD)'],
+  [/\bflexible\s+sig\b/gi,                                 'flexible sigmoidoscopy'],
+  // Anatomy
+  [/\bterminal\s+(?:ill?\s*(?:he|i)\s*um|ilium|illy\s*um|illy\s*em)\b/gi, 'terminal ileum (TI)'],
+  [/\bile[\s\-]?o[\s\-]?Cecil\b/gi,                        'ileocecal valve'],
+  [/\bsee\s*come\b/gi,                                     'cecum'],
+  [/\bseek\s*um\b/gi,                                      'cecum'],
+  [/\bsee\s*come\b/gi,                                     'cecum'],
+  [/\bhep(?:atic)?\s+flex\b/gi,                            'hepatic flexure'],
+  [/\bsplenic?\s+flex\b/gi,                                'splenic flexure'],
+  [/\bZee\s*line\b/gi,                                     'Z-line'],
+  [/\bGEE\s+junction\b/gi,                                 'GE junction'],
+  [/\bD\s+one\b/g,                                         'duodenal bulb (D1)'],
+  [/\bD\s+two\b/g,                                         'second part of duodenum (D2)'],
+  // Prep — colloquial
+  [/\bprep\s+(?:was\s+)?(?:great|excellent|perfect|outstanding|pristine|immaculate|spotless|clean)\b/gi, 'excellent bowel preparation (BBPS 8-9/9)'],
+  [/\b(?:great|excellent|perfect|clean)\s+prep\b/gi,       'excellent bowel preparation (BBPS 8-9/9)'],
+  [/\bprep\s+(?:was\s+)?(?:ok(?:ay)?|decent|passable|not\s+bad|alright|average)\b/gi, 'fair bowel preparation (BBPS 4-5/9)'],
+  [/\b(?:ok(?:ay)?|fair|average|so[\s\-]?so)\s+prep\b/gi,  'fair bowel preparation (BBPS 4-5/9)'],
+  [/\bprep\s+(?:was\s+)?(?:poor|terrible|bad|awful|horrible|inadequate|suboptimal)\b/gi, 'inadequate bowel preparation (BBPS <4/9)'],
+  [/\b(?:terrible|awful|horrible|bad|poor)\s+prep\b/gi,    'inadequate bowel preparation (BBPS <4/9)'],
+  // Size
+  [/\b(\d+)\s*(?:milla|milli|milo|mils?)\b/gi,             '$1mm'],
+  [/\b(\d+)\s*millometers?\b/gi,                           '$1mm'],
+  [/\b(\d+)\s*millomieters?\b/gi,                          '$1mm'],
+  // Interventions
+  [/\bcold\s+snare\s+poly\s*pect\s*omy\b/gi,               'cold snare polypectomy (CSP)'],
+  [/\bpoly\s*pect\s*omy\b/gi,                              'polypectomy'],
+  [/\barg\s*on\s+plas\s*ma\b/gi,                           'argon plasma coagulation (APC)'],
+  // Diagnoses
+  [/\bbarretts?\b/gi,                                      "Barrett's esophagus"],
+  [/\bbarrets?\b/gi,                                       "Barrett's esophagus"],
+  [/\bH\s+[Pp]ilory\b/g,                                   'H. pylori'],
+  [/\bH\s+[Pp]ylori\b/g,                                   'H. pylori'],
+  [/\bcrohn\b/gi,                                          "Crohn's disease"],
+  [/\bcrohns\b/gi,                                         "Crohn's disease"],
+  [/\bhemma\s*roids?\b/gi,                                 'hemorrhoids'],
+  [/\bhema\s*roids?\b/gi,                                  'hemorrhoids'],
+  [/\bhemmorrhoids?\b/gi,                                  'hemorrhoids'],
+  [/\bdiver\s*ticulosis\b/gi,                              'diverticulosis'],
+  // Complications
+  [/\bno\s+comp(?:s|lications?)?\b/gi,                     'no complications'],
+  [/\bpt\s+tolerated\b/gi,                                 'patient tolerated procedure well'],
+  [/\bpatient\s+tolerated\s+well\b/gi,                     'patient tolerated procedure well'],
+];
+
+function applyGICorrections(text) {
+  var corrected = text;
+  var count = 0;
+  // Pass 1: phonetic / colloquial mishearings
+  for (var i = 0; i < GI_PHONETIC.length; i++) {
+    var before = corrected;
+    corrected = corrected.replace(GI_PHONETIC[i][0], GI_PHONETIC[i][1]);
+    if (corrected !== before) count++;
+  }
+  // Pass 2: medical terminology standardization
+  for (var i = 0; i < GI_TERMS.length; i++) {
+    var before = corrected;
+    corrected = corrected.replace(GI_TERMS[i][0], GI_TERMS[i][1]);
+    if (corrected !== before) count++;
+  }
+  return { text: corrected, corrections: count };
+}
+
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  STATE                                                       ║
+// ╚══════════════════════════════════════════════════════════════╝
+var recognition   = null;
+var isRecording   = false;
+var finalText     = '';
+var interimText   = '';
+var totalCorrections = 0;
+var currentMode   = 'voice';  // 'voice' | 'paste'
+var timerInt      = null;
+var seconds       = 0;
+var audioCtx      = null;
+var analyser      = null;
+var animId        = null;
+var streamRef     = null;
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  TAB / MODE SWITCHING                                        ║
+// ╚══════════════════════════════════════════════════════════════╝
+function switchTab(tab) {
+  document.getElementById('tabRecord').classList.toggle('active', tab === 'record');
+  document.getElementById('tabReport').classList.toggle('active', tab === 'report');
+  document.getElementById('panelRecord').classList.toggle('active', tab === 'record');
+  document.getElementById('panelReport').classList.toggle('active', tab === 'report');
+}
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('modeVoice').classList.toggle('active', mode === 'voice');
+  document.getElementById('modePaste').classList.toggle('active', mode === 'paste');
+  document.getElementById('voiceSubPanel').style.display = mode === 'voice' ? 'flex' : 'none';
+  document.getElementById('voiceSubPanel').style.flexDirection = 'column';
+  document.getElementById('pasteSubPanel').style.display = mode === 'paste' ? 'flex' : 'none';
+  document.getElementById('pasteSubPanel').style.flexDirection = 'column';
+  if (mode === 'paste') syncGenerateButton();
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  SPEECH RECOGNITION (iOS Safari compatible)                  ║
+// ╚══════════════════════════════════════════════════════════════╝
+function initRecognition() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    showToast('Use Safari on iOS 14.5+ for voice recognition', 'error');
+    return null;
+  }
+  var r = new SR();
+  r.continuous      = true;
+  r.interimResults  = true;
+  r.lang            = 'en-US';
+  r.maxAlternatives = 5; // More candidates = better GI term matching
+
+  r.onstart = function() {
+    isRecording = true;
+    updateRecordUI();
+    log('onstart fired — mic active', 'ok');
+    showToast('Listening…', 'success');
+  };
+
+  r.onresult = function(e) {
+    log('onresult: ' + e.results.length + ' results, idx ' + e.resultIndex, 'ok');
+
+    // Only process NEW results from e.resultIndex onward
+    // (Do NOT re-process old results — causes double-correction on iOS restart)
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        // Pick the best alternative — the one our GI engine corrects most
+        var bestText = chooseBestAlternative(e.results[i]);
+        var res = applyGICorrections(bestText);
+        finalText += res.text + ' ';
+        totalCorrections += res.corrections;
+        log('Final: "' + bestText + '" → "' + res.text + '"', res.corrections > 0 ? 'ok' : '');
+      } else {
+        // Show interim from best alternative
+        interimText = chooseBestAlternative(e.results[i]);
+      }
+    }
+    renderTranscript();
+    syncGenerateButton();
+    updateCorrectionCount();
+  };
+
+  r.onerror = function(e) {
+    log('onerror: ' + e.error, 'err');
+    if (e.error === 'not-allowed') {
+      document.getElementById('permModal').classList.add('show');
+      stopRecording();
+    }
+    // no-speech is normal during pauses — ignore
+  };
+
+  // iOS stops recognition after silence — restart loop
+  r.onend = function() {
+    log('onend — isRecording=' + isRecording);
+    if (isRecording) {
+      setTimeout(function() {
+        if (isRecording && recognition) {
+          try { recognition.start(); }
+          catch(ex) { log('restart failed: ' + ex.message, 'err'); }
+        }
+      }, 150); // shorter gap = less dropped audio
+    }
+  };
+
+  return r;
+}
+
+// Choose the alternative that best matches GI vocabulary
+function chooseBestAlternative(result) {
+  if (!result || result.length === 0) return '';
+  // Score each alternative by how many GI corrections it triggers
+  var best = result[0].transcript;
+  var bestScore = scoreForGI(best);
+  for (var i = 1; i < result.length; i++) {
+    var alt = result[i].transcript;
+    var score = scoreForGI(alt);
+    if (score > bestScore) {
+      bestScore = score;
+      best = alt;
+      log('Alt ' + i + ' preferred: "' + alt + '" (score ' + score + ')', 'info');
+    }
+  }
+  return best;
+}
+
+// Score a transcript string by how many GI terms it contains
+function scoreForGI(text) {
+  var t = text.toLowerCase();
+  var score = 0;
+  // High-value GI keywords — each match adds to score
+  var keywords = [
+    'colonoscopy','endoscopy','egd','sigmoid','cecum','colon','rectum',
+    'polyp','adenoma','lesion','biopsy','snare','polypectomy','emr',
+    'prep','mucosa','diverticul','hemorrhoid','barrett','pylori','varices',
+    'withdrawal','insufflation','sphincter','duodenum','esophag','gastric',
+    'hepatic','splenic','flexure','ileum','ileocecal','transverse',
+    'ascending','descending','formalin','pathology','hemoclip','apc',
+    'ercp','sphincterotomy','cannulation','fluoroscopy','stent',
+    'crohn','colitis','dysplasia','carcinoma','neoplasm','friable',
+    'granular','erythema','ulcer','erosion','cobblestone','pseudopolyp'
+  ];
+  for (var i = 0; i < keywords.length; i++) {
+    if (t.indexOf(keywords[i]) !== -1) score += 2;
+  }
+  // Penalize very short transcripts (likely noise)
+  if (text.trim().split(' ').length < 2) score -= 3;
+  return score;
+}
+
+function startRecording() {
+  // Reset state first
+  finalText = ''; interimText = ''; totalCorrections = 0;
+  document.getElementById('transcriptDisplay').innerHTML = '';
+  document.getElementById('transcriptDisplay').style.display = 'none';
+  document.getElementById('transcriptEmpty').style.display = 'flex';
+
+  // Init recognition FIRST (needs user gesture context — no async before this)
+  if (!recognition) recognition = initRecognition();
+  if (!recognition) return;
+
+  // Start speech recognition immediately within the gesture
+  try {
+    recognition.start();
+    startTimer();
+    log('recognition.start() OK', 'ok');
+  } catch(e) {
+    log('recognition.start() error: ' + e.message);
+    showToast('Could not start: ' + e.message, 'error');
+    return;
+  }
+
+  // Request mic separately (for waveform only — speech API handles its own mic)
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(function(stream) { streamRef = stream; startWaveform(stream); log('Waveform mic OK'); })
+      .catch(function(e) { log('Waveform mic denied: ' + e.message); /* speech still works */ });
+  }
+}
+
+function stopRecording() {
+  isRecording = false;
+  // Commit any remaining interim text — apply corrections
+  if (interimText.trim()) {
+    var res = applyGICorrections(interimText.trim());
+    finalText = (finalText + ' ' + res.text).trim() + ' ';
+    totalCorrections += res.corrections;
+    interimText = '';
+  }
+  if (recognition) { try { recognition.stop(); } catch(e) {} }
+  stopWaveform(); stopTimer();
+  renderTranscript(); updateRecordUI(); syncGenerateButton();
+  if (finalText.trim()) showToast('Recording complete — tap Generate Report', 'success');
+}
+
+function toggleRecording() {
+  if (isRecording) stopRecording(); else startRecording();
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  TRANSCRIPT RENDER                                           ║
+// ╚══════════════════════════════════════════════════════════════╝
+function renderTranscript() {
+  var disp  = document.getElementById('transcriptDisplay');
+  var empty = document.getElementById('transcriptEmpty');
+  var combined = finalText + interimText;
+  if (!combined.trim()) return;
+  empty.style.display = 'none';
+  disp.style.display  = 'block';
+  // Show final (corrected) + interim (raw, greyed)
+  var html = escHtml(finalText);
+  if (interimText) html += '<span class="interim">' + escHtml(interimText) + '</span>';
+  disp.innerHTML = html;
+  document.getElementById('transcriptScroll').scrollTop = 999999;
+}
+
+function updateCorrectionCount() {
+  var el = document.getElementById('corrCount');
+  if (totalCorrections > 0) {
+    el.textContent = '· ' + totalCorrections + ' term' + (totalCorrections > 1 ? 's' : '') + ' corrected';
+  }
+  var bar = document.getElementById('correctionsBar');
+  if (totalCorrections > 0 && isRecording) {
+    bar.textContent = '✦ ' + totalCorrections + ' GI term' + (totalCorrections > 1 ? 's' : '') + ' auto-corrected';
+    bar.classList.add('show');
+  }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  PASTE MODE                                                  ║
+// ╚══════════════════════════════════════════════════════════════╝
+function pasteClipboard() {
+  if (navigator.clipboard && navigator.clipboard.readText) {
+    navigator.clipboard.readText().then(function(text) {
+      document.getElementById('pasteArea').value = text;
+      onPasteInput();
+      showToast('Pasted ✓', 'success');
+    }).catch(function() {
+      showToast('Long-press the text box → Paste', 'info');
+    });
+  } else {
+    showToast('Long-press the text box → Paste', 'info');
+  }
+}
+
+function onPasteInput() {
+  var txt = document.getElementById('pasteArea').value;
+  var cc = document.getElementById('charCount');
+  cc.textContent = txt.length + ' character' + (txt.length !== 1 ? 's' : '');
+  cc.classList.toggle('active', txt.trim().length > 0);
+  syncGenerateButton();
+}
+
+function clearPaste() {
+  document.getElementById('pasteArea').value = '';
+  onPasteInput();
+}
+
+function getActiveText() {
+  if (currentMode === 'paste') {
+    return document.getElementById('pasteArea').value.trim();
+  }
+  return finalText.trim();
+}
+
+function syncGenerateButton() {
+  document.getElementById('btnGenerate').disabled = getActiveText().length === 0;
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  WAVEFORM                                                    ║
+// ╚══════════════════════════════════════════════════════════════╝
+function startWaveform(stream) {
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser(); analyser.fftSize = 128;
+    audioCtx.createMediaStreamSource(stream).connect(analyser);
+    drawWave();
+  } catch(e) {}
+}
+function drawWave() {
+  var cv = document.getElementById('waveform'), ctx = cv.getContext('2d');
+  var W = cv.width, H = cv.height;
+  (function frame() {
+    animId = requestAnimationFrame(frame);
+    var buf = new Uint8Array(analyser ? analyser.frequencyBinCount : 32);
+    if (analyser) analyser.getByteFrequencyData(buf);
+    ctx.clearRect(0, 0, W, H);
+    var bw = (W / buf.length) * 2.2, x = 0;
+    for (var i = 0; i < buf.length; i++) {
+      var v = buf[i]/255, h = v*H*.88;
+      ctx.fillStyle = isRecording
+        ? 'rgba(0,' + Math.floor(190+v*65) + ',' + Math.floor(130+v*80) + ',.85)'
+        : 'rgba(50,70,90,.22)';
+      ctx.fillRect(x, H-h, bw-1, h); x += bw;
+    }
+  })();
+}
+function stopWaveform() {
+  if (animId) cancelAnimationFrame(animId);
+  if (streamRef) streamRef.getTracks().forEach(function(t){ t.stop(); });
+  if (audioCtx) { try { audioCtx.close(); } catch(e) {} }
+  analyser = null; audioCtx = null; streamRef = null;
+  var cv = document.getElementById('waveform'), ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.strokeStyle = 'rgba(50,70,90,.22)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, cv.height/2); ctx.lineTo(cv.width, cv.height/2); ctx.stroke();
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  TIMER                                                       ║
+// ╚══════════════════════════════════════════════════════════════╝
+function startTimer() {
+  seconds = 0; document.getElementById('timerRow').classList.add('active');
+  timerInt = setInterval(function() {
+    seconds++;
+    document.getElementById('timer').textContent =
+      String(Math.floor(seconds/60)).padStart(2,'0') + ':' + String(seconds%60).padStart(2,'0');
+  }, 1000);
+}
+function stopTimer() { clearInterval(timerInt); document.getElementById('timerRow').classList.remove('active'); }
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  REPORT EXTRACTION ENGINE                                    ║
+// ╚══════════════════════════════════════════════════════════════╝
+function extractReport(raw) {
+  // First apply GI corrections to the full text
+  var text = applyGICorrections(raw).text;
+  var t = text.toLowerCase();
+
+  // ── Detect procedure type ──
+  var procType = 'endoscopic procedure';
+  var procKey  = 'generic';
+  if (t.indexOf('colonoscopy') !== -1)               { procType = 'Colonoscopy';                         procKey = 'colonoscopy'; }
+  else if (t.indexOf('egd') !== -1 ||
+           t.indexOf('upper endoscopy') !== -1 ||
+           t.indexOf('esophagogastroduodenoscopy') !== -1) { procType = 'EGD (esophagogastroduodenoscopy)'; procKey = 'egd'; }
+  else if (t.indexOf('flexible sigmoidoscopy') !== -1) { procType = 'Flexible Sigmoidoscopy';            procKey = 'sigmo'; }
+  else if (t.indexOf('ercp') !== -1)                 { procType = 'ERCP';                                procKey = 'ercp'; }
+  else if (t.indexOf('eus') !== -1 || t.indexOf('endoscopic ultrasound') !== -1) { procType = 'EUS (Endoscopic Ultrasound)'; procKey = 'eus'; }
+
+  // ── Helper lookups ──
+  function has(kw) { return t.indexOf(kw) !== -1; }
+  function match(re) { var m = text.match(re); return m ? m[1] || m[0] : null; }
+
+  // ── Patient ──
+  var patient = {
+    name:       match(/patient(?:'s)? name[:\s]+([A-Z][a-z]+ [A-Z][a-z]+)/),
+    dob:        match(/(?:date of birth|dob)[:\s]+(\S+)/i),
+    mrn:        match(/(?:mrn|medical record)[:\s#]+([A-Z0-9\-]+)/i),
+    referring:  match(/(?:referred by|referring)[:\s]+([A-Z][a-z]+(?: [A-Z][a-z]+)?)/i),
+    physician:  match(/(?:Dr\.?\s*|performed by[:\s]+|endoscopist[:\s]+)([A-Z][a-z]+(?: [A-Z][a-z]+)?)/i)
+  };
+
+  // ── Indication ──
+  var indication = null;
+  var indMap = [
+    ['screening','Colorectal cancer screening'],
+    ['surveillance','Surveillance (prior polyps/IBD/Barrett\'s)'],
+    ['hematochezia','Hematochezia / rectal bleeding'],
+    ['rectal bleeding','Hematochezia / rectal bleeding'],
+    ['blood in stool','Hematochezia / rectal bleeding'],
+    ['melena','Melena / upper GI bleeding'],
+    ['iron deficiency','Iron deficiency anemia'],
+    ['anemia','Anemia evaluation'],
+    ['abdominal pain','Abdominal pain'],
+    ['diarrhea','Chronic diarrhea'],
+    ['constipation','Constipation'],
+    ['weight loss','Unintentional weight loss'],
+    ['dysphagia','Dysphagia'],
+    ['odynophagia','Odynophagia'],
+    ['reflux','GERD / reflux evaluation'],
+    ['heartburn','GERD / heartburn evaluation'],
+    ['barrett','Barrett\'s esophagus surveillance'],
+    ['h. pylori','H. pylori evaluation / eradication'],
+    ['celiac','Celiac disease evaluation'],
+    ['ibd','IBD evaluation / surveillance'],
+    ['polyp','Polyp surveillance'],
+    ['follow','Follow-up / surveillance']
+  ];
+  for (var i = 0; i < indMap.length; i++) {
+    if (has(indMap[i][0])) { indication = indMap[i][1]; break; }
+  }
+
+  // ── Date ──
+  var procDate = match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b/) || new Date().toLocaleDateString('en-US');
+
+  // ── Prep ──
+  var prep = null;
+  if (has('excellent bowel preparation') || has('bbps 8') || has('bbps 9')) prep = 'Excellent (BBPS 8-9/9)';
+  else if (has('good bowel preparation') || has('adequate bowel preparation') || has('bbps 6') || has('bbps 7')) prep = 'Good / Adequate (BBPS 6-7/9)';
+  else if (has('fair bowel preparation') || has('bbps 4') || has('bbps 5')) prep = 'Fair (BBPS 4-5/9)';
+  else if (has('poor bowel preparation') || has('inadequate bowel preparation') || has('bbps 0') || has('bbps 1') || has('bbps 2') || has('bbps 3')) prep = 'Poor / Inadequate (BBPS <4/9)';
+  else if (has('prep')) prep = 'Adequate';
+
+  // ── Extent / Intubation ──
+  var extent = null;
+  if (procKey === 'colonoscopy') {
+    if (has('terminal ileum')) extent = 'Terminal ileum (complete colonoscopy with TI intubation)';
+    else if (has('cecum') || has('cecal intubation')) extent = 'Cecum (complete colonoscopy)';
+    else if (has('ascending colon')) extent = 'Ascending colon';
+    else if (has('transverse colon')) extent = 'Transverse colon';
+    else if (has('splenic flexure')) extent = 'Splenic flexure';
+    else if (has('descending colon')) extent = 'Descending colon';
+    else if (has('sigmoid colon')) extent = 'Sigmoid colon';
+    else if (has('rectum')) extent = 'Rectum';
+  } else if (procKey === 'egd') {
+    if (has('second part of duodenum') || has('d2')) extent = 'Second part of duodenum (D2)';
+    else if (has('duodenal bulb') || has('d1')) extent = 'Duodenal bulb (D1)';
+    else if (has('pylorus')) extent = 'Pylorus';
+    else if (has('antrum')) extent = 'Gastric antrum';
+    else if (has('stomach')) extent = 'Stomach';
+    else if (has('esophagus')) extent = 'Esophagus';
+  }
+
+  // ── Withdrawal time ──
+  var withdrawal = null;
+  var wm = text.match(/(\d+(?:\.\d+)?)\s*(?:minute|min)s?\s*withdrawal/i) ||
+           text.match(/withdrawal\s*(?:time)?[:\s]+(\d+(?:\.\d+)?)\s*(?:minute|min)/i);
+  if (wm) withdrawal = wm[1] + ' minutes';
+
+  // ── Instrument ──
+  var instrument = match(/\b(Olympus|Pentax|Fujifilm|Karl Storz)\s*([A-Z0-9\-]+)/i);
+
+  // ── Anesthesia / Sedation ──
+  var sedation = null;
+  if (has('propofol')) sedation = 'Propofol (MAC anesthesia)';
+  else if (has('moderate sedation') || has('conscious sedation')) sedation = 'Moderate (conscious) sedation';
+  else if (has('mac') || has('anesthesia')) sedation = 'MAC anesthesia';
+  else if (has('unsedated') || has('without sedation')) sedation = 'Unsedated';
+  else if (has('fentanyl') || has('midazolam') || has('versed')) sedation = 'IV moderate sedation (fentanyl/midazolam)';
+
+  // ── Mucosa ──
+  var mucosaItems = [];
+  if (has('normal mucosa') || has('unremarkable mucosa') || has('normal-appearing mucosa')) mucosaItems.push('Normal-appearing mucosa throughout');
+  if (has('erythema') || has('erythematous')) mucosaItems.push('Erythema');
+  if (has('friabilit')) mucosaItems.push('Friability');
+  if (has('edema')) mucosaItems.push('Edema');
+  if (has('granular')) mucosaItems.push('Granularity');
+  if (has('ulceration')) mucosaItems.push('Ulceration');
+  if (has('erosion')) mucosaItems.push('Erosions');
+  if (has('loss of vascular pattern')) mucosaItems.push('Loss of vascular pattern');
+  if (has('pseudopolyp')) mucosaItems.push('Inflammatory pseudopolyps');
+  var mucosa = mucosaItems.length ? mucosaItems.join('; ') : 'Normal-appearing mucosa throughout';
+
+  // ── Polyps ──
+  var polyps = [];
+  var sentences = text.split(/[.;!\n]+/);
+  var polyLocs = ['terminal ileum (ti)','cecum','ascending colon','hepatic flexure',
+    'transverse colon','splenic flexure','descending colon','sigmoid colon',
+    'rectosigmoid junction','rectum','anal canal',
+    'esophagus','gastric cardia','gastric fundus','gastric body','antrum',
+    'gastric antrum','pylorus','duodenal bulb (d1)','second part of duodenum (d2)'];
+  for (var si = 0; si < sentences.length; si++) {
+    var s = sentences[si].trim(), sl = s.toLowerCase();
+    if (!/polyp|adenoma|lesion|mass|sessile|pedunculated|serrated|hyperplastic|neoplasm/i.test(sl)) continue;
+    var loc = null, size = null, morph = null, interv = null, num = null;
+    for (var li = 0; li < polyLocs.length; li++) {
+      if (sl.indexOf(polyLocs[li]) !== -1) { loc = polyLocs[li]; break; }
+    }
+    var szm = s.match(/(\d+(?:\.\d+)?)\s*(?:mm|cm)/i); if (szm) size = szm[0];
+    var nm = s.match(/(\w+)\s*polyps?\b/i);
+    if (nm && /two|three|four|five|2|3|4|5/i.test(nm[1])) num = nm[1];
+    if (/pedunculated|paris ip/i.test(sl)) morph = 'Pedunculated (Paris Ip)';
+    else if (/sessile serrated adenoma|ssa/i.test(sl)) morph = 'Sessile serrated adenoma (SSA)';
+    else if (/sessile serrated lesion|ssl/i.test(sl)) morph = 'Sessile serrated lesion (SSL)';
+    else if (/sessile|paris is/i.test(sl)) morph = 'Sessile (Paris Is)';
+    else if (/flat|paris iia/i.test(sl)) morph = 'Flat (Paris IIa)';
+    else if (/tubulovillous|tva/i.test(sl)) morph = 'Tubulovillous adenoma (TVA)';
+    else if (/tubular adenoma/i.test(sl)) morph = 'Tubular adenoma (TA)';
+    else if (/villous adenoma/i.test(sl)) morph = 'Villous adenoma';
+    else if (/hyperplastic/i.test(sl)) morph = 'Hyperplastic polyp';
+    else if (/traditional serrated|tsa/i.test(sl)) morph = 'Traditional serrated adenoma (TSA)';
+    if (/cold snare polypectomy|csp/i.test(sl)) interv = 'Cold snare polypectomy (CSP)';
+    else if (/hot snare polypectomy|hsp/i.test(sl)) interv = 'Hot snare polypectomy (HSP)';
+    else if (/emr/i.test(sl)) interv = 'EMR';
+    else if (/esd/i.test(sl)) interv = 'ESD';
+    else if (/apc/i.test(sl)) interv = 'APC ablation';
+    else if (/biopsi/i.test(sl)) interv = 'Biopsy taken';
+    else if (/removed|resected|excised/i.test(sl)) interv = 'Removed';
+    if (loc || size || morph || interv) {
+      polyps.push({ location: loc, size: size, morphology: morph, intervention: interv, count: num });
+    }
+  }
+
+  // ── Other Findings ──
+  var otherFindings = [];
+  if (has('diverticulosis') || has('colonic diverticula')) {
+    var dl = [];
+    if (has('sigmoid') && has('diverticul')) dl.push('sigmoid colon');
+    if (has('descending') && has('diverticul')) dl.push('descending colon');
+    if (has('pan') && has('diverticul')) dl.push('pan-colonic');
+    otherFindings.push('Diverticulosis' + (dl.length ? ' (' + dl.join(', ') + ')' : ''));
+  }
+  if (has('internal hemorrhoids')) otherFindings.push('Internal hemorrhoids');
+  else if (has('external hemorrhoids')) otherFindings.push('External hemorrhoids');
+  else if (has('hemorrhoids')) otherFindings.push('Hemorrhoids');
+  if (has('anal fissure')) otherFindings.push('Anal fissure');
+  if (has("barrett's esophagus")) otherFindings.push("Barrett's esophagus — biopsies taken per Seattle protocol");
+  if (has('hiatal hernia')) otherFindings.push('Hiatal hernia');
+  if (has('gastritis')) otherFindings.push('Gastritis');
+  if (has('duodenitis')) otherFindings.push('Duodenitis');
+  if (has('esophagitis') && !has('eosinophilic')) otherFindings.push('Esophagitis');
+  if (has('eosinophilic esophagitis (eoe)')) otherFindings.push('Eosinophilic esophagitis (EoE) — biopsies taken');
+  if (has('gastroesophageal reflux disease (gerd)') || has('reflux esophagitis (gerd)')) otherFindings.push('Reflux esophagitis (GERD)');
+  if (has('la grade')) otherFindings.push(match(/LA Grade ([A-D] esophagitis)/) || 'LA Grade esophagitis');
+  if (has('ulcerative colitis (uc)')) otherFindings.push('Ulcerative colitis');
+  if (has("crohn's disease")) otherFindings.push("Crohn's disease");
+  if (has('ischemic colitis')) otherFindings.push('Ischemic colitis');
+  if (has('microscopic colitis')) otherFindings.push('Microscopic colitis — biopsies taken');
+  if (has('angiodysplasia')) otherFindings.push('Angiodysplasia');
+  if (has('varices')) otherFindings.push(has('esophageal varices') ? 'Esophageal varices' : has('gastric varices') ? 'Gastric varices' : 'Varices');
+  if (has("dieulafoy's lesion")) otherFindings.push("Dieulafoy's lesion");
+  if (has('gave') || has('gastric antral vascular ectasia')) otherFindings.push('GAVE (gastric antral vascular ectasia)');
+  if (has('mallory-weiss tear')) otherFindings.push('Mallory-Weiss tear');
+  if (has('portal hypertensive gastropathy (phg)')) otherFindings.push('Portal hypertensive gastropathy (PHG)');
+  if (has('subepithelial lesion') || has('submucosal lesion')) otherFindings.push('Subepithelial lesion — EUS recommended for further evaluation');
+  if (has('h. pylori')) otherFindings.push('H. pylori — CLO test / biopsies taken');
+  if (has('celiac disease') || has('villous atrophy')) otherFindings.push('Celiac disease — duodenal biopsies taken (D2 x4, bulb x2)');
+  if (has('melanosis coli')) otherFindings.push('Melanosis coli');
+  if (has('low-grade dysplasia (lgd)')) otherFindings.push('Low-grade dysplasia (LGD)');
+  if (has('high-grade dysplasia (hgd)')) otherFindings.push('High-grade dysplasia (HGD) — multidisciplinary discussion recommended');
+
+  // ── Interventions ──
+  var interventions = {};
+  if (has('cold snare polypectomy (csp)')) interventions['Cold snare polypectomy (CSP)'] = 1;
+  if (has('hot snare polypectomy (hsp)')) interventions['Hot snare polypectomy (HSP)'] = 1;
+  if (has('emr (endoscopic mucosal resection)') || has('emr')) interventions['EMR (endoscopic mucosal resection)'] = 1;
+  if (has('esd (endoscopic submucosal dissection)') || has('esd')) interventions['ESD (endoscopic submucosal dissection)'] = 1;
+  if (has('apc (argon plasma coagulation)') || has('apc')) interventions['APC (argon plasma coagulation)'] = 1;
+  if (has('hemoclip placement') || has('endoclip placement')) interventions['Hemoclip placement'] = 1;
+  if (has('endoscopic variceal ligation') || has('evl')) interventions['Endoscopic variceal ligation (EVL)'] = 1;
+  if (has('epinephrine injection') || has('injection therapy')) interventions['Injection therapy (epinephrine)'] = 1;
+  if (has('balloon dilation') || has('stricture dilation') || has('esophageal dilation')) interventions['Endoscopic dilation'] = 1;
+  if (has('sems') || has('stent placement')) interventions['Stent placement (SEMS)'] = 1;
+  if (has('submucosal tattoo') || has('india ink')) interventions['Submucosal tattoo (India ink)'] = 1;
+  if (has('submucosal injection') || has('saline lift')) interventions['Submucosal injection / lift'] = 1;
+  if (has('cold forceps biopsy')) interventions['Cold forceps biopsy'] = 1;
+  else if ((has('biopsy') || has('biopsies')) && Object.keys(interventions).length === 0) interventions['Forceps biopsy'] = 1;
+  if (has('brush cytology')) interventions['Brush cytology'] = 1;
+  if (has('fna (fine needle aspiration)')) interventions['FNA (fine needle aspiration)'] = 1;
+  var interventionList = Object.keys(interventions);
+
+  // ── Specimens ──
+  var specimens = [];
+  if (has('specimen submitted to pathology') || has('pathology')) {
+    if (polyps.length) specimens.push('Polyp specimen(s) — ' + polyps.length + ' lesion(s) submitted for histopathology');
+    if (has("barrett's")) specimens.push("Barrett's esophagus — biopsies submitted per Seattle protocol (4-quadrant q2cm)");
+    if (has('celiac') || has('villous atrophy')) specimens.push('Duodenal biopsies (D2 x4, bulb x2) for celiac evaluation');
+    if (has('h. pylori') || has('clo test')) specimens.push('Antral/body biopsies for H. pylori (CLO + histology)');
+    if (!specimens.length) specimens.push('Tissue submitted to pathology — await histopathology report');
+  }
+
+  // ── Complications ──
+  var complications = 'None';
+  if (has('no complications') || has('procedure uncomplicated')) complications = 'None';
+  else if (has('immediate post-polypectomy bleeding')) complications = 'Immediate post-polypectomy bleeding — hemostasis achieved endoscopically';
+  else if (has('perforation')) complications = 'Perforation — see procedure note for management';
+  else if (has('post-polypectomy syndrome')) complications = 'Post-polypectomy syndrome — patient counseled';
+  else if (has('adverse event')) complications = 'Adverse event — see note';
+
+  // ── Assessment ──
+  var assessParts = [procType];
+  if (polyps.length) assessParts.push(polyps.length + ' colonic polyp' + (polyps.length > 1 ? 's' : '') + ' identified and removed');
+  if (otherFindings.length) assessParts = assessParts.concat(otherFindings.slice(0,3));
+  if (assessParts.length === 1) assessParts.push('No significant endoscopic pathology identified');
+  var assessment = assessParts.join('. ');
+
+  // ── Recommendations ──
+  var recs = [];
+  if (polyps.length) {
+    var hasAdvanced = polyps.some(function(p){
+      return /villous|hgd|high.grade|ssl|ssa|tva|≥10|large/i.test((p.morphology||'') + (p.size||''));
+    });
+    if (hasAdvanced) recs.push('Repeat colonoscopy in 3 years (advanced adenoma/SSL)');
+    else recs.push('Repeat colonoscopy in 3-5 years per ACG/USMSTF guidelines');
+  }
+  if (has('h. pylori')) recs.push('H. pylori eradication therapy (per ACG protocol) + test-of-cure in 4 weeks');
+  if (has("barrett's")) recs.push("Barrett's surveillance per ACG guidelines (NDBE: repeat EGD in 3-5 years)");
+  if (has('eosinophilic esophagitis (eoe)')) recs.push('EoE: dietary elimination therapy and/or swallowed budesonide; repeat EGD in 6-8 weeks');
+  if (has('varices')) recs.push('Variceal surveillance in 1-2 years; optimize portal hypertension management (NSBB/TIPS consideration)');
+  if (has('celiac')) recs.push('Strict gluten-free diet; repeat serology and EGD in 12 months to assess mucosal healing');
+  if (has('hgd') || has('high-grade dysplasia')) recs.push('High-grade dysplasia: multidisciplinary tumor board discussion; consider EMR/ESD or ablation therapy');
+  if (has('subepithelial') || has('submucosal lesion')) recs.push('Subepithelial lesion: EUS for characterization; surgical referral if GIST suspected');
+  if (specimens.length) recs.push('Await pathology results — patient to follow up within 2-3 weeks');
+  if (!recs.length) recs.push('Clinical follow-up as clinically indicated');
+
+  return {
+    procType: procType, procKey: procKey,
+    patient: patient,
+    date: procDate, indication: indication, prep: prep,
+    sedation: sedation, instrument: instrument, extent: extent, withdrawal: withdrawal,
+    mucosa: mucosa, polyps: polyps, otherFindings: otherFindings,
+    interventions: interventionList, specimens: specimens,
+    complications: complications, assessment: assessment, recommendations: recs
+  };
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  REPORT TEMPLATES (procedure-specific)                       ║
+// ╚══════════════════════════════════════════════════════════════╝
+function generateReport() {
+  var text = getActiveText();
+  if (!text) { showToast('No transcript — record or paste first', 'error'); return; }
+
+  document.getElementById('btnGenerate').disabled  = true;
+  document.getElementById('genSpinner').classList.add('active');
+  document.getElementById('genLabel').textContent  = 'Extracting…';
+  document.getElementById('reportEmpty').style.display   = 'none';
+  document.getElementById('reportContent').style.display = 'none';
+  document.getElementById('shimmerWrap').style.display   = 'block';
+  switchTab('report');
+
+  setTimeout(function() {
+    try {
+      var R = extractReport(text);
+      var html = buildReportHTML(R, text);
+      var el = document.getElementById('reportContent');
+      el.innerHTML = html;
+      el.style.display = 'block';
+      document.getElementById('reportEmpty').style.display = 'none';
+      glowFields();
+      // Overlay any scanned patient data on top of transcript-extracted data
+      if (patientData && Object.keys(patientData).length > 0) {
+        injectPatientIntoReport();
+      }
+      showToast('Report generated ✓', 'success');
+    } catch(err) {
+      console.error('Report error:', err);
+      // Fallback: always show something
+      var el = document.getElementById('reportContent');
+      el.innerHTML = fallbackHTML(text);
+      el.style.display = 'block';
+      document.getElementById('reportEmpty').style.display = 'none';
+      showToast('Report generated (basic mode)', 'success');
+    } finally {
+      document.getElementById('shimmerWrap').style.display = 'none';
+      document.getElementById('btnGenerate').disabled  = false;
+      document.getElementById('btnExport').disabled    = false;
+      document.getElementById('genSpinner').classList.remove('active');
+      document.getElementById('genLabel').textContent  = '↺ Re-generate';
+      document.getElementById('reportScroll').scrollTop = 0;
+    }
+  }, 450);
+}
+
+// ── HTML builders ──────────────────────────────────────────────
+function F(label, value, opts) {
+  opts = opts || {};
+  var empty = !value || !String(value).trim();
+  if (empty && !opts.required) return '';
+  var display = empty ? '<span style="opacity:.4">Not documented</span>' : escHtml(String(value));
+  return '<div class="report-field">' +
+    '<div class="field-label">' + escHtml(label) + '</div>' +
+    '<div class="field-value' + (empty ? ' empty' : '') + '">' + display + '</div></div>';
+}
+
+function S(title, body, opts) {
+  opts = opts || {};
+  if (!body || !body.replace(/<[^>]*>/g,'').trim()) return '';
+  return '<div class="report-section">' +
+    '<div class="section-title">' + escHtml(title) + '</div>' + body + '</div>';
+}
+
+function buildReportHTML(R, rawText) {
+  var html = '';
+  var procEmoji = { colonoscopy:'🔭', egd:'🔬', sigmo:'🔭', ercp:'🩺', eus:'📡', generic:'🩺' };
+  html += '<div class="proc-type-badge">' + (procEmoji[R.procKey]||'🩺') + ' ' + escHtml(R.procType) + '</div>';
+
+  // ── PATIENT — merge scanned patientData (priority) + transcript-extracted ──
+  var pd = patientData || {};
+  var patName      = pd.name      || R.patient.name;
+  var patDob       = pd.dob       || R.patient.dob;
+  var patMrn       = pd.mrn       || R.patient.mrn;
+  var patAge       = pd.age       || '';
+  var patSex       = pd.sex       || '';
+  var patReferring = pd.referring || R.patient.referring;
+  var patPhysician = pd.physician || R.patient.physician;
+  var patDos       = pd.dos       || R.date;
+  var patAccount   = pd.account   || '';
+  var patInsurance = pd.insurance || '';
+  var patRoom      = pd.room      || '';
+
+  var patHtml = F('Patient Name', patName) +
+    F('Date of Birth', patDob) +
+    F('Age', patAge) +
+    F('Sex', patSex) +
+    F('MRN / Patient ID', patMrn) +
+    F('Account / Encounter #', patAccount) +
+    F('Insurance / Payer', patInsurance) +
+    F('Room / Bed', patRoom) +
+    F('Referring Physician', patReferring);
+  if (patHtml) html += S('Patient Information', patHtml);
+
+  // ── PROCEDURE INFO ──
+  var pi = F('Procedure', R.procType, {required:true}) +
+    F('Date of Service', patDos || R.date, {required:true}) +
+    F('Performing Physician', patPhysician) +
+    F('Indication', R.indication) +
+    F('Sedation / Anesthesia', R.sedation) +
+    F('Endoscope / Instrument', R.instrument);
+  html += S('Procedure Information', pi);
+
+  // ── PROCEDURE-SPECIFIC SECTIONS ──
+  if (R.procKey === 'colonoscopy') {
+    html += buildColonoscopyHTML(R);
+  } else if (R.procKey === 'egd') {
+    html += buildEGDHTML(R);
+  } else if (R.procKey === 'sigmo') {
+    html += buildSigmoidoscopyHTML(R);
+  } else {
+    html += buildGenericHTML(R);
+  }
+
+  // ── INTERVENTIONS ──
+  if (R.interventions.length) {
+    var tags = R.interventions.map(function(x){
+      return '<span class="tag tag-blue">' + escHtml(x) + '</span>';
+    }).join('');
+    html += S('Interventions Performed', '<div style="margin-top:4px">' + tags + '</div>');
+  }
+
+  // ── SPECIMENS ──
+  if (R.specimens.length) {
+    var specHtml = '';
+    for (var i = 0; i < R.specimens.length; i++) specHtml += F('Specimen ' + (i+1), R.specimens[i]);
+    html += S('Specimens & Pathology', specHtml);
+  }
+
+  // ── ASSESSMENT & PLAN ──
+  var recHtml = '';
+  for (var i = 0; i < R.recommendations.length; i++) {
+    recHtml += '<div class="report-field"><div class="field-value" style="margin-bottom:4px">' + escHtml((i+1) + '. ' + R.recommendations[i]) + '</div></div>';
+  }
+  var apHtml = F('Assessment', R.assessment, {required:true}) +
+    (recHtml ? '<div class="report-field"><div class="field-label">Recommendations</div>' + recHtml.replace(/<div class="report-field">/g,'').replace(/<\/div>/g,'').split('</div>').map(function(x){return x ? '<div style="margin-bottom:4px">' + x + '</div>' : '';}).join('') + '</div>' : '') +
+    F('Complications', R.complications || 'None', {required:true});
+  // build recs properly
+  var recsBlock = '<div class="report-field"><div class="field-label">Recommendations</div>';
+  for (var i = 0; i < R.recommendations.length; i++) {
+    recsBlock += '<div class="field-value" style="margin-bottom:6px">' + escHtml((i+1) + '. ' + R.recommendations[i]) + '</div>';
+  }
+  recsBlock += '</div>';
+  html += S('Assessment & Plan',
+    F('Assessment', R.assessment, {required:true}) +
+    recsBlock +
+    F('Complications', R.complications || 'None', {required:true})
+  );
+
+  // ── RAW TRANSCRIPT (collapsible) ──
+  html += '<div class="report-section">' +
+    '<div class="section-title" style="cursor:pointer" ' +
+    'onclick="var d=document.getElementById(\'rawTx\');d.style.display=d.style.display===\'block\'?\'none\':\'block\'">' +
+    'Original Transcript ▾</div>' +
+    '<div id="rawTx" style="display:none"><div class="report-field">' +
+    '<div class="field-value" style="white-space:pre-wrap;font-size:11px;line-height:1.7;color:var(--text-dim)">' +
+    escHtml(rawText) + '</div></div></div></div>';
+
+  return html;
+}
+
+// ── COLONOSCOPY TEMPLATE ──
+function buildColonoscopyHTML(R) {
+  var html = '';
+
+  // Technique
+  var techHtml = F('Bowel Preparation', R.prep) +
+    F('Extent of Examination', R.extent || 'Cecum') +
+    F('Withdrawal Time', R.withdrawal) +
+    F('Imaging Adjuncts', R.procKey === 'colonoscopy' ? 'White light imaging' : null);
+  html += S('Technique & Exam Quality', techHtml);
+
+  // Findings by segment
+  var findHtml = F('Mucosa', R.mucosa, {required:true});
+
+  if (R.otherFindings.some(function(f){ return f.indexOf('Diverticulosis') === 0; })) {
+    var div = R.otherFindings.filter(function(f){ return f.indexOf('Diverticulosis') === 0; })[0];
+    findHtml += F('Diverticulosis', div);
+  }
+  if (R.otherFindings.some(function(f){ return /hemorrhoid|fissure|prolapse/i.test(f); })) {
+    var anl = R.otherFindings.filter(function(f){ return /hemorrhoid|fissure|prolapse/i.test(f); }).join('; ');
+    findHtml += F('Anorectal Findings', anl);
+  }
+
+  // Polyps
+  if (R.polyps.length > 0) {
+    for (var i = 0; i < R.polyps.length; i++) {
+      var p = R.polyps[i];
+      var desc = [
+        p.location ? 'Location: ' + p.location : null,
+        p.size ? 'Size: ' + p.size : null,
+        p.morphology ? 'Morphology: ' + p.morphology : null,
+        p.intervention ? 'Removal: ' + p.intervention : null,
+        'Specimen submitted to pathology'
+      ].filter(Boolean).join(' | ');
+      findHtml += F('Polyp ' + (i+1), desc);
+    }
+  } else {
+    findHtml += F('Polyps', 'No polyps identified');
+  }
+
+  // Other colon findings
+  var otherColon = R.otherFindings.filter(function(f){
+    return !/(Diverticulosis|hemorrhoid|fissure|prolapse)/i.test(f);
+  });
+  if (otherColon.length) findHtml += F('Additional Findings', otherColon.join('; '));
+
+  html += S('Colonoscopy Findings', findHtml);
+  return html;
+}
+
+// ── EGD TEMPLATE ──
+function buildEGDHTML(R) {
+  var html = '';
+
+  var techHtml = F('Extent of Examination', R.extent || 'Second part of duodenum (D2)') +
+    F('Retroflexion', 'Performed in stomach') +
+    F('Imaging Adjuncts', 'White light imaging');
+  html += S('Technique & Exam Quality', techHtml);
+
+  var findHtml = '';
+
+  // Esophagus section
+  var esophFindings = R.otherFindings.filter(function(f){
+    return /(esophag|barrett|z-line|hiatal|varices|mallory|eoe|eosinophilic|stricture|ring)/i.test(f);
+  });
+  var esophMucosa = R.mucosa.indexOf('Normal') !== -1 ? 'Normal squamous mucosa; Z-line at appropriate level' : R.mucosa;
+  findHtml += F('Esophagus', esophFindings.length ? esophFindings.join('; ') : esophMucosa, {required:true});
+
+  // GE Junction / Stomach
+  var gejFindings = R.otherFindings.filter(function(f){ return /(gej|hiatal|barrett)/i.test(f); });
+  if (gejFindings.length) findHtml += F('GE Junction', gejFindings.join('; '));
+
+  var stomachFindings = R.otherFindings.filter(function(f){
+    return /(gastri|ulcer|erosion|gave|phg|vascular|portal|h. pylori|subepithelial|submucosal|angiodysplasia|dieulafoy)/i.test(f);
+  });
+  findHtml += F('Stomach', stomachFindings.length ? stomachFindings.join('; ') : 'Normal-appearing gastric mucosa, no ulceration or mass', {required:true});
+
+  // Duodenum
+  var duodFindings = R.otherFindings.filter(function(f){ return /(duodenit|celiac|villous|duodenal)/i.test(f); });
+  findHtml += F('Duodenum', duodFindings.length ? duodFindings.join('; ') : 'Normal duodenal mucosa', {required:true});
+
+  // EGD polyps/lesions
+  if (R.polyps.length) {
+    for (var i = 0; i < R.polyps.length; i++) {
+      var p = R.polyps[i];
+      var desc = [p.location, p.size, p.morphology, p.intervention ? 'Removal: ' + p.intervention : null].filter(Boolean).join(' | ');
+      findHtml += F('Lesion ' + (i+1), desc);
+    }
+  }
+
+  // Remaining findings
+  var otherEGD = R.otherFindings.filter(function(f){
+    return !/(esophag|barrett|z-line|hiatal|gastri|ulcer|erosion|gave|phg|vascular|portal|h. pylori|subepithelial|submucosal|duodenit|celiac|villous|duodenal)/i.test(f);
+  });
+  if (otherEGD.length) findHtml += F('Other Findings', otherEGD.join('; '));
+
+  html += S('EGD Findings', findHtml);
+  return html;
+}
+
+// ── FLEXIBLE SIGMOIDOSCOPY TEMPLATE ──
+function buildSigmoidoscopyHTML(R) {
+  var html = '';
+  var techHtml = F('Extent of Examination', R.extent || 'Sigmoid colon') +
+    F('Bowel Preparation', R.prep) + F('Withdrawal Time', R.withdrawal);
+  html += S('Technique', techHtml);
+  var findHtml = F('Mucosa', R.mucosa, {required:true});
+  if (R.polyps.length) {
+    for (var i = 0; i < R.polyps.length; i++) {
+      var p = R.polyps[i];
+      findHtml += F('Polyp '+(i+1), [p.location, p.size, p.morphology, p.intervention].filter(Boolean).join(' | '));
+    }
+  }
+  if (R.otherFindings.length) findHtml += F('Other Findings', R.otherFindings.join('; '));
+  html += S('Sigmoidoscopy Findings', findHtml);
+  return html;
+}
+
+// ── GENERIC TEMPLATE ──
+function buildGenericHTML(R) {
+  var findHtml = F('Mucosa', R.mucosa, {required:true});
+  if (R.polyps.length) {
+    for (var i = 0; i < R.polyps.length; i++) {
+      var p = R.polyps[i];
+      findHtml += F('Lesion '+(i+1), [p.location, p.size, p.morphology, p.intervention].filter(Boolean).join(' | '));
+    }
+  }
+  if (R.otherFindings.length) findHtml += F('Findings', R.otherFindings.join('; '), {required:true});
+  return S('Findings', findHtml);
+}
+
+function fallbackHTML(rawText) {
+  return '<div class="proc-type-badge">🩺 Endoscopic Procedure</div>' +
+    S('Procedure Information',
+      F('Date', new Date().toLocaleDateString('en-US'), {required:true}) +
+      F('Complications', 'None noted', {required:true})
+    ) +
+    S('Transcript (Raw)', F('Captured Text', rawText, {required:true})) +
+    S('Assessment & Plan', F('Recommendations', 'Clinical follow-up as indicated', {required:true}));
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  COPY REPORT                                                 ║
+// ╚══════════════════════════════════════════════════════════════╝
+// ── BUILD PLAIN TEXT REPORT ──────────────────────────────────────────────────
+function buildReportText() {
+  var el = document.getElementById('reportContent');
+  if (!el || !el.textContent.trim()) return null;
+
+  // Get procedure type badge text for header
+  var badge = el.querySelector('.proc-type-badge');
+  var procName = badge ? badge.textContent.trim() : 'ENDOSCOPIC PROCEDURE';
+
+  var line80 = '═══════════════════════════════════════════════════════════════════════════════';
+  var txt = line80 + '\n';
+  txt += 'GI PROCEDURE NOTE\n';
+  txt += procName + '\n';
+  txt += 'Generated: ' + new Date().toLocaleString('en-US', {dateStyle:'long', timeStyle:'short'}) + '\n';
+  txt += line80 + '\n\n';
+
+  var sections = el.querySelectorAll('.report-section');
+  for (var i = 0; i < sections.length; i++) {
+    var titleEl = sections[i].querySelector('.section-title');
+    if (!titleEl) continue;
+    var title = titleEl.textContent.replace('▾','').trim().toUpperCase();
+    // Skip raw transcript section in exported text
+    if (title.indexOf('ORIGINAL TRANSCRIPT') !== -1) continue;
+    txt += title + '\n' + '─'.repeat(Math.min(title.length, 60)) + '\n';
+    var fields = sections[i].querySelectorAll('.report-field');
+    for (var j = 0; j < fields.length; j++) {
+      var lbl = fields[j].querySelector('.field-label');
+      var val = fields[j].querySelector('.field-value');
+      if (!lbl || !val) continue;
+      var v = val.textContent.trim();
+      if (!v || v === 'Not documented') continue;
+      var label = (lbl.textContent || '').trim();
+      // Word-wrap long values at ~60 chars
+      var line = label + ': ' + v;
+      if (line.length <= 76) {
+        txt += line + '\n';
+      } else {
+        // First line with label
+        txt += label + ':\n';
+        // Wrap value
+        var words = v.split(' ');
+        var cur = '  ';
+        for (var k = 0; k < words.length; k++) {
+          if ((cur + words[k]).length > 76 && cur.trim()) {
+            txt += cur.trimEnd() + '\n';
+            cur = '  ' + words[k] + ' ';
+          } else {
+            cur += words[k] + ' ';
+          }
+        }
+        if (cur.trim()) txt += cur.trimEnd() + '\n';
+      }
+    }
+    txt += '\n';
+  }
+  txt += line80 + '\n';
+  txt += 'Generated by GI Scribe  •  For clinical use only\n';
+  txt += line80 + '\n';
+  return txt;
+}
+
+// ── EXPORT SHEET ──────────────────────────────────────────────────────────────
+function openExport() {
+  var txt = buildReportText();
+  if (!txt) { showToast('Generate a report first', 'error'); return; }
+  document.getElementById('exportOverlay').classList.add('show');
+}
+
+function closeExport(e) {
+  if (e && e.target !== document.getElementById('exportOverlay')) return;
+  document.getElementById('exportOverlay').classList.remove('show');
+}
+
+function doExport(method) {
+  document.getElementById('exportOverlay').classList.remove('show');
+  var txt = buildReportText();
+  if (!txt) { showToast('No report to export', 'error'); return; }
+
+  if (method === 'copy') {
+    // Clipboard copy — with fallback
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt)
+        .then(function() { showToast('Copied to clipboard ✓', 'success'); })
+        .catch(function() { openPreview(txt); });
+    } else {
+      openPreview(txt);
+    }
+
+  } else if (method === 'share') {
+    // iOS/macOS native Share Sheet — covers AirDrop, Messages, Mail, Notes, etc.
+    if (navigator.share) {
+      navigator.share({
+        title: 'GI Procedure Note',
+        text: txt
+      }).then(function() {
+        showToast('Shared ✓', 'success');
+      }).catch(function(e) {
+        if (e.name !== 'AbortError') openPreview(txt);
+      });
+    } else {
+      // Fallback: open preview so user can manually copy
+      openPreview(txt);
+      showToast('Select All → Copy, then paste into your app', 'info');
+    }
+
+  } else if (method === 'preview') {
+    openPreview(txt);
+
+  } else if (method === 'email') {
+    // mailto link with report in body
+    var badge = document.querySelector('.proc-type-badge');
+    var subject = badge ? 'GI Procedure Note — ' + badge.textContent.trim() : 'GI Procedure Note';
+    var mailUrl = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(txt);
+    // Try to open mail app
+    var link = document.createElement('a');
+    link.href = mailUrl;
+    link.click();
+    setTimeout(function() { showToast('Mail app opened', 'info'); }, 300);
+  }
+}
+
+// ── TEXT PREVIEW MODAL ────────────────────────────────────────────────────────
+function openPreview(txt) {
+  var ta = document.getElementById('previewTextarea');
+  ta.value = txt;
+  var lines = txt.split('\n').length;
+  var chars = txt.length;
+  document.getElementById('previewFooter').textContent =
+    lines + ' lines · ' + chars + ' characters · Tap and hold to select · or tap Copy All';
+  document.getElementById('previewOverlay').classList.add('show');
+  // Scroll to top
+  setTimeout(function() { ta.scrollTop = 0; }, 50);
+}
+
+function closePreview() {
+  document.getElementById('previewOverlay').classList.remove('show');
+}
+
+function copyFromPreview() {
+  var ta = document.getElementById('previewTextarea');
+  ta.select();
+  // Try modern clipboard API first
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ta.value)
+      .then(function() {
+        showToast('Copied ✓', 'success');
+        closePreview();
+      })
+      .catch(function() {
+        // Fallback: execCommand
+        try {
+          document.execCommand('copy');
+          showToast('Copied ✓', 'success');
+          closePreview();
+        } catch(e) {
+          showToast('Select All then Copy manually', 'info');
+        }
+      });
+  } else {
+    try {
+      document.execCommand('copy');
+      showToast('Copied ✓', 'success');
+      closePreview();
+    } catch(e) {
+      showToast('Select All then Copy manually', 'info');
+    }
+  }
+}
+
+// Legacy stub kept for compatibility
+function copyReport() { openExport(); }
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  UTILITIES                                                   ║
+// ╚══════════════════════════════════════════════════════════════╝
+function glowFields() {
+  var vals = document.querySelectorAll('.field-value:not(.empty)');
+  for (var i = 0; i < vals.length; i++) {
+    (function(el, delay) {
+      setTimeout(function() {
+        el.classList.add('glow');
+        setTimeout(function(){ el.classList.remove('glow'); }, 2000);
+      }, delay);
+    })(vals[i], i * 40);
+  }
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function updateRecordUI() {
+  var btn  = document.getElementById('btnRecord');
+  var pill = document.getElementById('statusPill');
+  var tip = document.getElementById('micTip');
+  if (isRecording) {
+    btn.textContent = '⏹ Stop Recording';
+    btn.classList.add('recording');
+    pill.classList.add('recording');
+    document.getElementById('statusText').textContent = 'Recording';
+    if (tip) tip.classList.add('show');
+  } else {
+    btn.textContent = '🎙 Start Recording';
+    btn.classList.remove('recording');
+    pill.classList.remove('recording');
+    document.getElementById('statusText').textContent = 'Ready';
+    document.getElementById('correctionsBar').classList.remove('show');
+    if (tip) tip.classList.remove('show');
+  }
+}
+
+function clearAll() {
+  stopRecording();
+  finalText = ''; interimText = ''; totalCorrections = 0;
+  // Clear patient data
+  patientData = {};
+  capturedImageB64 = null;
+  var chip = document.getElementById('patientChip');
+  if (chip) { chip.textContent = ''; chip.style.display = 'none'; }
+  document.getElementById('transcriptDisplay').style.display  = 'none';
+  document.getElementById('transcriptEmpty').style.display    = 'flex';
+  document.getElementById('transcriptDisplay').innerHTML      = '';
+  document.getElementById('reportContent').style.display      = 'none';
+  document.getElementById('reportEmpty').style.display        = 'flex';
+  document.getElementById('shimmerWrap').style.display        = 'none';
+  document.getElementById('btnGenerate').disabled             = true;
+  document.getElementById('btnExport').disabled               = true;
+  document.getElementById('genLabel').textContent             = '✦ Generate Report';
+  document.getElementById('timer').textContent                = '00:00';
+  document.getElementById('corrCount').textContent            = '';
+  document.getElementById('correctionsBar').classList.remove('show');
+}
+
+function dismissModal() { document.getElementById('permModal').classList.remove('show'); }
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(t._t);
+  t._t = setTimeout(function(){ t.classList.remove('show'); }, 3500);
+}
+
+
+function log(msg, type) {
+  console.log('[GIScribe]', msg);
+  var dl = document.getElementById('debugLog');
+  if (!dl) return;
+  var d = document.createElement('div');
+  d.className = 'dbg-line ' + (type||'');
+  var t = new Date().toTimeString().slice(0,8);
+  d.textContent = t + ' ' + msg;
+  dl.insertBefore(d, dl.firstChild);
+  // Auto-show on errors
+  if (type === 'err') document.getElementById('debugOverlay').classList.add('show');
+}
+function toggleDebug() {
+  document.getElementById('debugOverlay').classList.toggle('show');
+}
+// Log key environment info on load
+window.addEventListener('load', function() {
+  log('UA: ' + navigator.userAgent.slice(0,80), 'info');
+  log('SR available: ' + !!(window.SpeechRecognition || window.webkitSpeechRecognition), !!(window.SpeechRecognition || window.webkitSpeechRecognition) ? 'ok' : 'err');
+  log('getUserMedia: ' + !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia), 'info');
+  log('HTTPS: ' + (location.protocol === 'https:'), location.protocol === 'https:' ? 'ok' : 'err');
+  var cv = document.getElementById('waveform'), ctx = cv.getContext('2d');
+  ctx.strokeStyle = 'rgba(50,70,90,.22)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, cv.height/2); ctx.lineTo(cv.width, cv.height/2); ctx.stroke();
+});
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  PATIENT SCANNER — Camera + Claude Vision                    ║
+// ╚══════════════════════════════════════════════════════════════╝
+var patientData     = {};   // holds extracted fields
+var cameraStream    = null;
+var facingMode      = 'environment'; // rear camera default
+var capturedImageB64 = null;
+
+// ── OPEN / CLOSE ──────────────────────────────────────────────
+function openPatientScanner() {
+  document.getElementById('patientOverlay').classList.add('show');
+  document.getElementById('patientResults').classList.remove('show');
+  document.getElementById('cameraView').style.display = 'flex';
+  document.getElementById('cameraControls').style.display = 'flex';
+  startCamera();
+}
+
+function closePatientScanner() {
+  stopCamera();
+  document.getElementById('patientOverlay').classList.remove('show');
+}
+
+// ── CAMERA ────────────────────────────────────────────────────
+function startCamera() {
+  stopCamera();
+  // Check if getUserMedia is available at all
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showCameraFallback();
+    return;
+  }
+  var constraints = {
+    video: {
+      facingMode: { ideal: facingMode },
+      width:  { ideal: 1920 },
+      height: { ideal: 1080 }
+    }
+  };
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(function(stream) {
+      cameraStream = stream;
+      var vid = document.getElementById('patientVideo');
+      vid.srcObject = stream;
+      vid.play();
+      // Show flip button on mobile (likely has multiple cameras)
+      var isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        document.getElementById('switchCamBtn').style.display = 'flex';
+        document.getElementById('camPlaceholder').style.display = 'none';
+      }
+    })
+    .catch(function(e) {
+      log('Camera error: ' + e.message, 'err');
+      showCameraFallback();
+    });
+}
+
+function showCameraFallback() {
+  // Hide live video, show choose-photo-only UI
+  var vid = document.getElementById('patientVideo');
+  if (vid) vid.style.display = 'none';
+  // Update overlay message
+  var frame = document.querySelector('.camera-frame');
+  if (frame && frame.parentNode) {
+    frame.parentNode.innerHTML = '<div style="padding:32px;text-align:center;font-family:DM Mono,monospace;font-size:12px;color:rgba(0,212,170,.8);line-height:2">' +
+      '\uD83D\uDCC1<br>Camera not available<br><span style="color:rgba(255,255,255,.5)">Use <strong>Choose Photo</strong> below<br>to select or capture an image</span></div>';
+  }
+  showToast('Use Choose Photo or Take Photo below', 'info');
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(function(t){ t.stop(); });
+    cameraStream = null;
+  }
+  var vid = document.getElementById('patientVideo');
+  if (vid) vid.srcObject = null;
+}
+
+function switchCamera() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  startCamera();
+}
+
+// ── CAPTURE ───────────────────────────────────────────────────
+function capturePhoto() {
+  var vid   = document.getElementById('patientVideo');
+  var canvas = document.getElementById('snapCanvas');
+  if (!vid || !vid.videoWidth) { showToast('Camera not ready', 'error'); return; }
+  canvas.width  = vid.videoWidth;
+  canvas.height = vid.videoHeight;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(vid, 0, 0);
+  var dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+  capturedImageB64 = dataUrl.split(',')[1];
+  processPatientImage(dataUrl);
+}
+
+function triggerFileInput() {
+  document.getElementById('patientFileInput').click();
+}
+
+function handleFileCapture(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    capturedImageB64 = dataUrl.split(',')[1];
+    processPatientImage(dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── CLAUDE VISION — extract patient demographics ───────────────
+function processPatientImage(dataUrl) {
+  document.getElementById('patientProcessing').classList.add('show');
+  stopCamera();
+  setProcessingMsg('Reading label\u2026');
+
+  // Preprocess image for OCR: resize + increase contrast
+  var img = new Image();
+  img.onload = function() {
+    var MAX = 1600;
+    var w = img.width, h = img.height;
+    if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+    else if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+    var c = document.getElementById('snapCanvas');
+    c.width = w; c.height = h;
+    var ctx = c.getContext('2d');
+    // Draw base image
+    ctx.drawImage(img, 0, 0, w, h);
+    // Boost contrast for better OCR
+    var imageData = ctx.getImageData(0, 0, w, h);
+    var d = imageData.data;
+    for (var i = 0; i < d.length; i += 4) {
+      // Convert to grayscale, then apply contrast stretch
+      var lum = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+      var v = Math.min(255, Math.max(0, (lum - 128) * 1.5 + 128));
+      d[i] = d[i+1] = d[i+2] = v;
+    }
+    ctx.putImageData(imageData, 0, 0);
+    log('Image preprocessed: ' + w + 'x' + h, 'ok');
+    runOCR(dataUrl, c);
+  };
+  img.onerror = function() {
+    // Fallback: use canvas as-is
+    runOCR(dataUrl, document.getElementById('snapCanvas'));
+  };
+  img.src = dataUrl;
+}
+
+function setProcessingMsg(msg) {
+  var el = document.querySelector('#patientProcessing p');
+  if (el) el.textContent = msg;
+}
+
+function runOCR(dataUrl, canvas) {
+  setProcessingMsg('Running OCR\u2026');
+  if (typeof Tesseract === 'undefined') {
+    log('Tesseract not loaded', 'err');
+    showToast('OCR library not loaded \u2014 check connection', 'error');
+    document.getElementById('patientProcessing').classList.remove('show');
+    showPatientResultsManual(dataUrl);
+    return;
+  }
+
+  Tesseract.recognize(canvas, 'eng', {
+    logger: function(m) {
+      if (m.status === 'recognizing text') {
+        setProcessingMsg('Reading\u2026 ' + Math.round(m.progress * 100) + '%');
+      }
+    }
+  }).then(function(result) {
+    document.getElementById('patientProcessing').classList.remove('show');
+    var text = result.data.text;
+    log('OCR raw text: ' + text.replace(/\n/g,' ').slice(0, 300), 'ok');
+    var fields = parsePatientFields(text);
+    var found = Object.keys(fields).filter(function(k){ return fields[k]; }).length;
+    log('Fields found: ' + found + ' — ' + JSON.stringify(fields).slice(0,200), found > 0 ? 'ok' : 'err');
+    showPatientResults(dataUrl, fields);
+  }).catch(function(e) {
+    document.getElementById('patientProcessing').classList.remove('show');
+    log('OCR error: ' + e.message, 'err');
+    showToast('OCR failed \u2014 enter fields manually', 'info');
+    showPatientResultsManual(dataUrl);
+  });
+}
+
+// ── PARSE OCR TEXT INTO PATIENT FIELDS ───────────────────────────────────────
+function parsePatientFields(text) {
+  // Normalize: collapse multiple spaces, fix common OCR errors
+  var t = text
+    .replace(/\r/g, '\n')
+    .replace(/\|/g, 'I')           // pipe → I (common OCR mistake)
+    .replace(/0(?=[A-Z])/g, 'O')   // 0 before letter → O
+    .replace(/ {2,}/g, ' ');
+
+  var lines = t.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+  var fullText = lines.join(' ');
+
+  log('OCR lines: ' + lines.length, 'ok');
+
+  var fields = {};
+
+  // ── Helper: extract value after a label on same or next line ──
+  function extract(patterns, valuePattern) {
+    for (var i = 0; i < lines.length; i++) {
+      for (var p = 0; p < patterns.length; p++) {
+        var re = new RegExp(patterns[p], 'i');
+        var m = lines[i].match(re);
+        if (m) {
+          // Value might be after colon on same line
+          var rest = lines[i].slice(lines[i].search(re) + m[0].length).replace(/^[\s:]+/, '');
+          if (rest.length > 1) {
+            if (valuePattern) { var vm = rest.match(valuePattern); if (vm) return vm[0].trim(); }
+            else return rest.trim();
+          }
+          // Or on the next line
+          if (i + 1 < lines.length) {
+            var next = lines[i+1].trim();
+            if (next.length > 1) {
+              if (valuePattern) { var vm2 = next.match(valuePattern); if (vm2) return vm2[0].trim(); }
+              else return next;
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  // ── DATE patterns ──────────────────────────────────────────────
+  var DATE_RE = /\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})\b/;
+  function extractDate(patterns) {
+    var raw = extract(patterns, /\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/);
+    if (!raw) return null;
+    var m = raw.match(DATE_RE);
+    if (!m) return null;
+    var yr = m[3].length === 2 ? '20' + m[3] : m[3];
+    return ('0'+m[1]).slice(-2) + '/' + ('0'+m[2]).slice(-2) + '/' + yr;
+  }
+
+  // ── NAME ───────────────────────────────────────────────────────
+  // Try labeled name first
+  fields.name = extract(
+    ['(?:patient|pt)[\\s\\.\\-]*name', 'name[\\s\\.\\-]*(?:patient|pt)?', '^name'],
+    /[A-Z][A-Za-z\-]+(?:,\s*[A-Z][A-Za-z\-]+(?:\s+[A-Z][A-Za-z\-]+)?|\s+[A-Z][A-Za-z\-]+(?:\s+[A-Z][A-Za-z\-]+)?)/
+  );
+  // Fallback: look for "LAST, FIRST" pattern anywhere
+  if (!fields.name) {
+    var nameMatch = fullText.match(/\b([A-Z]{2,}),\s*([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)?)\b/);
+    if (nameMatch) fields.name = nameMatch[0];
+  }
+
+  // ── DOB ────────────────────────────────────────────────────────
+  fields.dob = extractDate(['(?:d(?:ate)?\\s*(?:of\\s*)?b(?:irth)?|dob|born)[\\s\\.\\-:]*']);
+
+  // ── AGE ────────────────────────────────────────────────────────
+  fields.age = extract(['\\bage\\b', 'age[\\s\\-:]*(?:yrs?|years?)?'], /\b\d{1,3}\b/);
+  // Also try "YO" pattern like "65 YO" or "65Y"
+  if (!fields.age) {
+    var ageMatch = fullText.match(/\b(\d{1,3})\s*(?:y\.?o\.?|yr\.?s?|years?)\b/i);
+    if (ageMatch) fields.age = ageMatch[1];
+  }
+
+  // ── SEX / GENDER ───────────────────────────────────────────────
+  fields.sex = extract(['(?:sex|gender)[\\s\\.\\-:]*'], /\b(?:male|female|[MF])\b/i);
+  if (!fields.sex) {
+    // Look for M/F adjacent to age or standalone
+    var sexMatch = fullText.match(/\b(Male|Female)\b/i);
+    if (sexMatch) fields.sex = sexMatch[1];
+    else {
+      var mfMatch = fullText.match(/\b([MF])(?:\s|\/|,)/);
+      if (mfMatch) fields.sex = mfMatch[1] === 'M' ? 'Male' : 'Female';
+    }
+  }
+
+  // ── MRN ────────────────────────────────────────────────────────
+  fields.mrn = extract([
+    '(?:mrn|medical\\s*rec(?:ord)?(?:\\s*(?:no|num|number|#|id))?)',
+    '(?:patient|pt)\\s*(?:id|#|no|num|number)',
+    '(?:record|chart)\\s*(?:#|no|num|number|id)',
+    'id\\s*(?:no|#|num|number)?(?:\\s*:)'
+  ], /[A-Z0-9\-]{4,20}/i);
+
+  // ── DATE OF SERVICE ────────────────────────────────────────────
+  fields.dos = extractDate([
+    '(?:date\\s*(?:of\\s*)?(?:service|visit|procedure|surgery|admit|admission))',
+    '(?:d(?:os|ov|oa|op))[\\s\\.\\-:]*',
+    '(?:visit|procedure|service|admit(?:ted)?)\\s*(?:date|dt)'
+  ]);
+
+  // ── PHYSICIAN ──────────────────────────────────────────────────
+  fields.physician = extract([
+    '(?:attending|perform(?:ing)?|primary\\s*care|pcp|provider|physician|provider|md|dr)\\.?\\s*(?:physician|provider|dr|md)?',
+    'treat(?:ing)?\\s*(?:physician|provider|md)',
+    'responsible\\s*(?:physician|provider)'
+  ], /(?:Dr\.?\s*)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+/);
+
+  // ── REFERRING PHYSICIAN ────────────────────────────────────────
+  fields.referring = extract([
+    'refer(?:r(?:ing|ed(?:\\s*by)?))?\\s*(?:physician|provider|md|dr|source)?'
+  ], /(?:Dr\.?\s*)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+/);
+
+  // ── ACCOUNT / ENCOUNTER ────────────────────────────────────────
+  fields.account = extract([
+    '(?:account|acct|encounter|visit|fin(?:ancial)?|csn|encounter\\s*(?:#|no|num))',
+    'fin(?:ancial)?\\s*(?:#|no|num|id|class)?'
+  ], /[A-Z0-9\-]{4,20}/i);
+
+  // ── INSURANCE ──────────────────────────────────────────────────
+  fields.insurance = extract([
+    '(?:insurance|ins|payer|plan|carrier|primary\\s*(?:ins|insurance|payer))',
+    '(?:payor|coverage)'
+  ]);
+  // Common payer names that might appear without a label
+  if (!fields.insurance) {
+    var insurers = ['Medicare','Medicaid','Aetna','BlueCross','Blue Cross','Blue Shield',
+      'United','UnitedHealth','Cigna','Humana','Anthem','Tricare','Wellcare',
+      'Molina','Centene','Ambetter','BCBS','Empire','Highmark','Harvard Pilgrim',
+      'Tufts','Caresource','Sunrise','Coventry'];
+    for (var ii = 0; ii < insurers.length; ii++) {
+      if (fullText.toLowerCase().indexOf(insurers[ii].toLowerCase()) !== -1) {
+        fields.insurance = insurers[ii];
+        break;
+      }
+    }
+  }
+
+  // ── ROOM / BED ─────────────────────────────────────────────────
+  fields.room = extract([
+    '(?:room|rm|bed|location|unit\\s*room)[\\s\\.\\-:#]+'
+  ], /[A-Z0-9\-]{1,10}/i);
+
+  // ── Clean up: remove null/undefined, trim strings ──────────────
+  var out = {};
+  for (var k in fields) {
+    if (fields[k] && typeof fields[k] === 'string' && fields[k].trim().length > 0) {
+      out[k] = fields[k].trim();
+    }
+  }
+  return out;
+}
+
+
+function showPatientResults(dataUrl, fields) {
+  // Show preview image
+  document.getElementById('patientPreviewImg').src = dataUrl;
+  // Build fields UI
+  var el = document.getElementById('patientFieldsEl');
+  var found = 0, total = 0;
+  var html = '';
+  PATIENT_FIELDS.forEach(function(f) {
+    var val = (fields[f.key] && fields[f.key] !== 'null') ? fields[f.key] : '';
+    var hasVal = val && val.trim().length > 0;
+    if (hasVal) found++;
+    total++;
+    html += '<div class="patient-field-row">' +
+      '<div class="patient-field-label">' +
+        '<span>' + f.label + '</span>' +
+        (hasVal ? '<span class="patient-field-found">✓ found</span>' : '<span class="patient-field-missing">not found</span>') +
+      '</div>' +
+      '<input class="patient-field-input' + (hasVal ? ' populated' : '') + '" ' +
+        'id="pf_' + f.key + '" ' +
+        'type="text" ' +
+        'value="' + escHtml(val) + '" ' +
+        'placeholder="' + f.placeholder + '">' +
+    '</div>';
+  });
+  // Summary header
+  var summary = '<div style="padding:12px 0 16px;font-size:12px;font-family:\'DM Mono\',monospace;color:' +
+    (found > 0 ? 'var(--accent)' : 'var(--warn)') + '">' +
+    (found > 0 ? '✦ ' + found + ' of ' + total + ' fields extracted automatically. Review and correct below.' :
+     '⚠ No fields detected. Check image quality and try again, or enter manually.') +
+    '</div>';
+  el.innerHTML = summary + html;
+
+  // Switch to results view
+  document.getElementById('cameraView').style.display = 'none';
+  document.getElementById('cameraControls').style.display = 'none';
+  document.getElementById('patientResults').classList.add('show');
+  showToast(found + ' field' + (found !== 1 ? 's' : '') + ' extracted', found > 0 ? 'success' : 'info');
+}
+
+function showPatientResultsManual(dataUrl) {
+  // No API — show empty fields for manual entry
+  showPatientResults(dataUrl, {});
+  showToast('Enter fields manually below', 'info');
+}
+
+// ── RETAKE ────────────────────────────────────────────────────
+function retakePhoto() {
+  capturedImageB64 = null;
+  document.getElementById('patientResults').classList.remove('show');
+  document.getElementById('cameraView').style.display = 'flex';
+  document.getElementById('cameraControls').style.display = 'flex';
+  document.getElementById('patientPreviewImg').src = '';
+  startCamera();
+}
+
+// ── APPLY TO REPORT ───────────────────────────────────────────
+function applyPatientData() {
+  // Read current field values (user may have edited them)
+  var data = {};
+  PATIENT_FIELDS.forEach(function(f) {
+    var inp = document.getElementById('pf_' + f.key);
+    if (inp && inp.value.trim()) data[f.key] = inp.value.trim();
+  });
+  patientData = data;
+
+  // Update the patient chip in the capture panel
+  var chip = document.getElementById('patientChip');
+  if (data.name || data.mrn) {
+    chip.textContent = (data.name ? data.name : '') + (data.mrn ? ' · MRN: ' + data.mrn : '');
+    chip.style.display = 'block';
+  }
+
+  closePatientScanner();
+
+  // If a report already exists, inject patient info into it now
+  var reportEl = document.getElementById('reportContent');
+  if (reportEl && reportEl.textContent.trim()) {
+    injectPatientIntoReport();
+  }
+
+  var count = Object.keys(data).length;
+  showToast(count + ' patient field' + (count !== 1 ? 's' : '') + ' saved ✓', 'success');
+}
+
+// ── INJECT PATIENT DATA INTO RENDERED REPORT ──────────────────
+function injectPatientIntoReport() {
+  if (!patientData || Object.keys(patientData).length === 0) return;
+  var el = document.getElementById('reportContent');
+  if (!el) return;
+
+  var fieldMap = {
+    name:      'Patient Name',
+    dob:       'Date of Birth',
+    age:       'Age',
+    sex:       'Sex',
+    mrn:       'MRN / Patient ID',
+    account:   'Account / Encounter #',
+    insurance: 'Insurance / Payer',
+    room:      'Room / Bed',
+    referring: 'Referring Physician',
+    dos:       'Date of Service',
+    physician: 'Performing Physician'
+  };
+
+  // Find patient info section
+  var sections = el.querySelectorAll('.report-section');
+  var patSection = null;
+  for (var i = 0; i < sections.length; i++) {
+    var t = sections[i].querySelector('.section-title');
+    if (t && t.textContent.indexOf('Patient') !== -1) { patSection = sections[i]; break; }
+  }
+
+  // If no patient section, insert one at top
+  if (!patSection) {
+    var newSec = document.createElement('div');
+    newSec.className = 'report-section';
+    newSec.innerHTML = '<div class="section-title">Patient Information</div>';
+    el.insertBefore(newSec, el.firstChild);
+    patSection = newSec;
+  }
+
+  // Build a map of existing label→valueEl for fast lookup
+  var existing = {};
+  var fields = patSection.querySelectorAll('.report-field');
+  for (var i = 0; i < fields.length; i++) {
+    var lbl = fields[i].querySelector('.field-label');
+    var val = fields[i].querySelector('.field-value');
+    if (lbl && val) existing[lbl.textContent.trim()] = val;
+  }
+
+  // Update or append each patientData field
+  for (var k in fieldMap) {
+    if (!patientData[k]) continue;
+    var label = fieldMap[k];
+    if (existing[label]) {
+      // Update in place
+      existing[label].textContent = patientData[k];
+      existing[label].classList.remove('empty');
+      existing[label].classList.add('glow');
+      (function(v){ setTimeout(function(){ v.classList.remove('glow'); }, 2500); })(existing[label]);
+    } else {
+      // Append new field
+      patSection.insertAdjacentHTML('beforeend', F(label, patientData[k]));
+    }
+  }
+}
+
+// INIT
+window.addEventListener('load', function() {
+  var cv = document.getElementById('waveform'), ctx = cv.getContext('2d');
+  ctx.strokeStyle = 'rgba(50,70,90,.22)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, cv.height/2); ctx.lineTo(cv.width, cv.height/2); ctx.stroke();
+});
+</script>
+
+<button id="debugToggle" onclick="toggleDebug()">🐛 LOG</button>
+<div id="debugOverlay">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:#fff;font-size:12px;font-weight:600">
+    Debug Log <button onclick="document.getElementById('debugLog').innerHTML=''" style="background:none;border:1px solid rgba(255,255,255,.2);color:#999;font-size:10px;padding:2px 7px;border-radius:4px;cursor:pointer;font-family:monospace">Clear</button>
+  </div>
+  <div id="debugLog"></div>
+</div>
+
+<!-- PATIENT SCANNER MODAL -->
+<div class="patient-overlay" id="patientOverlay">
+
+  <div class="patient-header">
+    <span class="patient-header-title">📷 Patient ID Scan</span>
+    <button class="patient-close" onclick="closePatientScanner()">Done</button>
+  </div>
+
+  <!-- CAMERA VIEW -->
+  <div class="camera-area" id="cameraView">
+    <video id="patientVideo" autoplay playsinline muted></video>
+    <div class="camera-overlay-ui">
+      <div class="camera-frame">
+        <div class="camera-frame-corner tl"></div>
+        <div class="camera-frame-corner tr"></div>
+        <div class="camera-frame-corner bl"></div>
+        <div class="camera-frame-corner br"></div>
+      </div>
+    </div>
+    <div class="patient-processing" id="patientProcessing">
+      <div class="patient-processing-icon">🔬</div>
+      <p>Reading patient data...</p>
+    </div>
+    <canvas id="snapCanvas" style="display:none"></canvas>
+  </div>
+
+  <div class="camera-controls" id="cameraControls">
+    <button class="camera-alt-btn" onclick="triggerFileInput()">
+      📁<br>Choose Photo
+    </button>
+    <button class="shutter-btn" onclick="capturePhoto()" title="Take photo">📷</button>
+    <button class="camera-alt-btn" id="switchCamBtn" onclick="switchCamera()" style="display:none">
+      🔄<br>Flip Camera
+    </button>
+    <div class="camera-alt-btn" style="pointer-events:none;opacity:.4" id="camPlaceholder">
+      &nbsp;
+    </div>
+  </div>
+
+  <!-- HIDDEN FILE INPUT for choosing from photo library -->
+  <input type="file" id="patientFileInput" accept="image/*" capture="environment"
+    style="display:none" onchange="handleFileCapture(event)">
+
+  <!-- RESULTS VIEW -->
+  <div class="patient-results" id="patientResults">
+    <img id="patientPreviewImg" src="" alt="Captured" class="patient-preview-img">
+    <div class="patient-fields" id="patientFieldsEl">
+      <!-- filled by JS -->
+    </div>
+    <div class="patient-actions">
+      <button class="btn-patient-retake" onclick="retakePhoto()">↩ Retake</button>
+      <button class="btn-patient-apply" onclick="applyPatientData()">✓ Apply to Report</button>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
